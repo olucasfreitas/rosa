@@ -4,8 +4,6 @@ package organizations
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
@@ -13,14 +11,49 @@ import (
 // Attaches a policy to a root, an organizational unit (OU), or an individual
 // account. How the policy affects accounts depends on the type of policy. Refer to
 // the Organizations User Guide for information about each policy type:
-//   - AISERVICES_OPT_OUT_POLICY (https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_ai-opt-out.html)
-//   - BACKUP_POLICY (https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_backup.html)
-//   - SERVICE_CONTROL_POLICY (https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scp.html)
-//   - TAG_POLICY (https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_tag-policies.html)
 //
-// This operation can be called only from the organization's management account or
-// by a member account that is a delegated administrator for an Amazon Web Services
-// service.
+// [SERVICE_CONTROL_POLICY]
+//
+// [RESOURCE_CONTROL_POLICY]
+//
+// [DECLARATIVE_POLICY_EC2]
+//
+// [BACKUP_POLICY]
+//
+// [TAG_POLICY]
+//
+// [CHATBOT_POLICY]
+//
+// [AISERVICES_OPT_OUT_POLICY]
+//
+// [SECURITYHUB_POLICY]
+//
+// [UPGRADE_ROLLOUT_POLICY]
+//
+// [INSPECTOR_POLICY]
+//
+// [BEDROCK_POLICY]
+//
+// [S3_POLICY]
+//
+// [NETWORK_SECURITY_DIRECTOR_POLICY]
+//
+// You can only call this operation from the management account or a member
+// account that is a delegated administrator.
+//
+// [BEDROCK_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_bedrock.html
+// [NETWORK_SECURITY_DIRECTOR_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_network_security_director.html
+// [UPGRADE_ROLLOUT_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_upgrade_rollout.html
+// [BACKUP_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_backup.html
+// [CHATBOT_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_chatbot.html
+// [TAG_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_tag-policies.html
+// [INSPECTOR_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_inspector.html
+// [S3_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_s3.html
+// [RESOURCE_CONTROL_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_rcps.html
+// [AISERVICES_OPT_OUT_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_ai-opt-out.html
+// [SECURITYHUB_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_security_hub.html
+// [SERVICE_CONTROL_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scp.html
+// [DECLARATIVE_POLICY_EC2]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_declarative.html
 func (c *Client) AttachPolicy(ctx context.Context, params *AttachPolicyInput, optFns ...func(*Options)) (*AttachPolicyOutput, error) {
 	if params == nil {
 		params = &AttachPolicyInput{}
@@ -38,26 +71,33 @@ func (c *Client) AttachPolicy(ctx context.Context, params *AttachPolicyInput, op
 
 type AttachPolicyInput struct {
 
-	// The unique identifier (ID) of the policy that you want to attach to the target.
-	// You can get the ID for the policy by calling the ListPolicies operation. The
-	// regex pattern (http://wikipedia.org/wiki/regex) for a policy ID string requires
-	// "p-" followed by from 8 to 128 lowercase or uppercase letters, digits, or the
-	// underscore character (_).
+	// ID for the policy that you want to attach to the target. You can get the ID for
+	// the policy by calling the ListPoliciesoperation.
+	//
+	// The [regex pattern] for a policy ID string requires "p-" followed by from 8 to 128 lowercase
+	// or uppercase letters, digits, or the underscore character (_).
+	//
+	// [regex pattern]: http://wikipedia.org/wiki/regex
 	//
 	// This member is required.
 	PolicyId *string
 
-	// The unique identifier (ID) of the root, OU, or account that you want to attach
-	// the policy to. You can get the ID by calling the ListRoots ,
-	// ListOrganizationalUnitsForParent , or ListAccounts operations. The regex pattern (http://wikipedia.org/wiki/regex)
-	// for a target ID string requires one of the following:
+	// ID for the root, OU, or account that you want to attach the policy to. You can
+	// get the ID by calling the ListRoots, ListOrganizationalUnitsForParent, or ListAccounts operations.
+	//
+	// The [regex pattern] for a target ID string requires one of the following:
+	//
 	//   - Root - A string that begins with "r-" followed by from 4 to 32 lowercase
 	//   letters or digits.
+	//
 	//   - Account - A string that consists of exactly 12 digits.
+	//
 	//   - Organizational unit (OU) - A string that begins with "ou-" followed by from
 	//   4 to 32 lowercase letters or digits (the ID of the root that the OU is in). This
 	//   string is followed by a second "-" dash and from 8 to 32 additional lowercase
 	//   letters or digits.
+	//
+	// [regex pattern]: http://wikipedia.org/wiki/regex
 	//
 	// This member is required.
 	TargetId *string
@@ -73,9 +113,6 @@ type AttachPolicyOutput struct {
 }
 
 func (c *Client) addOperationAttachPolicyMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpAttachPolicy{}, middleware.After)
 	if err != nil {
 		return err
@@ -84,17 +121,8 @@ func (c *Client) addOperationAttachPolicyMiddlewares(stack *middleware.Stack, op
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "AttachPolicy"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -106,16 +134,7 @@ func (c *Client) addOperationAttachPolicyMiddlewares(stack *middleware.Stack, op
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -124,16 +143,13 @@ func (c *Client) addOperationAttachPolicyMiddlewares(stack *middleware.Stack, op
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpAttachPolicyValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opAttachPolicy(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "AttachPolicy"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -148,13 +164,8 @@ func (c *Client) addOperationAttachPolicyMiddlewares(stack *middleware.Stack, op
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opAttachPolicy(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "AttachPolicy",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

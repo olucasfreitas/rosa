@@ -4,17 +4,17 @@ package route53
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/route53/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Gets information about a specified configuration for DNS query logging. For
-// more information about DNS query logs, see CreateQueryLoggingConfig (https://docs.aws.amazon.com/Route53/latest/APIReference/API_CreateQueryLoggingConfig.html)
-// and Logging DNS Queries (https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/query-logs.html)
-// .
+// Gets information about a specified configuration for DNS query logging.
+//
+// For more information about DNS query logs, see [CreateQueryLoggingConfig] and [Logging DNS Queries].
+//
+// [CreateQueryLoggingConfig]: https://docs.aws.amazon.com/Route53/latest/APIReference/API_CreateQueryLoggingConfig.html
+// [Logging DNS Queries]: https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/query-logs.html
 func (c *Client) GetQueryLoggingConfig(ctx context.Context, params *GetQueryLoggingConfigInput, optFns ...func(*Options)) (*GetQueryLoggingConfigOutput, error) {
 	if params == nil {
 		params = &GetQueryLoggingConfigInput{}
@@ -44,8 +44,9 @@ type GetQueryLoggingConfigInput struct {
 type GetQueryLoggingConfigOutput struct {
 
 	// A complex type that contains information about the query logging configuration
-	// that you specified in a GetQueryLoggingConfig (https://docs.aws.amazon.com/Route53/latest/APIReference/API_GetQueryLoggingConfig.html)
-	// request.
+	// that you specified in a [GetQueryLoggingConfig]request.
+	//
+	// [GetQueryLoggingConfig]: https://docs.aws.amazon.com/Route53/latest/APIReference/API_GetQueryLoggingConfig.html
 	//
 	// This member is required.
 	QueryLoggingConfig *types.QueryLoggingConfig
@@ -57,9 +58,6 @@ type GetQueryLoggingConfigOutput struct {
 }
 
 func (c *Client) addOperationGetQueryLoggingConfigMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsRestxml_serializeOpGetQueryLoggingConfig{}, middleware.After)
 	if err != nil {
 		return err
@@ -68,17 +66,8 @@ func (c *Client) addOperationGetQueryLoggingConfigMiddlewares(stack *middleware.
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "GetQueryLoggingConfig"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -90,16 +79,7 @@ func (c *Client) addOperationGetQueryLoggingConfigMiddlewares(stack *middleware.
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -108,16 +88,13 @@ func (c *Client) addOperationGetQueryLoggingConfigMiddlewares(stack *middleware.
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpGetQueryLoggingConfigValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opGetQueryLoggingConfig(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "GetQueryLoggingConfig"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -132,13 +109,8 @@ func (c *Client) addOperationGetQueryLoggingConfigMiddlewares(stack *middleware.
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opGetQueryLoggingConfig(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "GetQueryLoggingConfig",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

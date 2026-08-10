@@ -387,7 +387,7 @@ var _ = Describe("Edit IDP",
 					idpType         = "htpasswd"
 					idpNames        = []string{"htpasswdn1", "htpasswdn2", "htpasswd3"}
 					validUserName   = "user1"
-					validUserPasswd = "Pass1@htpasswd"
+					validUserPasswd = helper.GenerateRandomStringWithSymbols(12)
 					invalidUserName = "user:2"
 				)
 
@@ -456,8 +456,8 @@ var _ = Describe("Edit IDP",
 					idpGithub            = "github"
 					idpLDAP              = "ldap"
 					invalidIdpType       = "invalidIdp"
-					UserName             = "user1"
-					UserPasswd           = "Pass1@htpasswd"
+					UserName             string
+					UserPasswd           string
 					invalidMappingMethod = "invalidmappingmethod"
 					invalidCaFilePath    = "invalidCaPath"
 					invalidTeam          = "invalidTeam"
@@ -511,7 +511,7 @@ var _ = Describe("Edit IDP",
 				var (
 					ERROR_INVALID_IDP_TYPE = "Expected a valid IDP type. Options are [github gitlab google htpasswd ldap openid]"
 					ERROR_INVALID_MAPPING  = fmt.Sprintf(
-						"Failed to create IDP for cluster '%s': Expected a valid mapping method. Options are [add claim generate lookup]",
+						"Failed to create IDP for cluster '%s': expected a valid mapping method; options are [add claim generate lookup]",
 						clusterID,
 					)
 					ERROR_INVALID_CERTIFICATE_BUNDLE = fmt.Sprintf(
@@ -523,7 +523,8 @@ var _ = Describe("Edit IDP",
 
 				//Htpasswd
 				By("Try creating htpasswd idp with invalid idp type")
-				_, UserName, UserPasswd, err := helper.GenerateHtpasswdPair(UserName, UserPasswd)
+				_, UserName, UserPasswd, err := helper.GenerateHtpasswdPair(
+					helper.GenerateRandomString(6), helper.GenerateRandomStringWithSymbols(12))
 				Expect(err).To(BeNil())
 				_, err = idpService.CreateIDP(
 					clusterID, idp[idpHtpasswd].name,
@@ -812,7 +813,7 @@ var _ = Describe("Edit IDP",
 							"-y")
 						Expect(err).NotTo(BeNil())
 						textData = rosaClient.Parser.TextData.Input(output).Parse().Tip()
-						Expect(textData).Should(ContainSubstring("The name \"cluster-admin\" is reserved for admin user IDP"))
+						Expect(textData).Should(ContainSubstring("the name \"cluster-admin\" is reserved for admin user IDP"))
 
 						By("List IDPs")
 						idpTab, _, err := idpService.ListIDP(clusterID)

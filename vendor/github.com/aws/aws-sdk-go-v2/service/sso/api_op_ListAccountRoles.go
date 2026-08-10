@@ -5,7 +5,6 @@ package sso
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/sso/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -29,9 +28,10 @@ func (c *Client) ListAccountRoles(ctx context.Context, params *ListAccountRolesI
 
 type ListAccountRolesInput struct {
 
-	// The token issued by the CreateToken API call. For more information, see
-	// CreateToken (https://docs.aws.amazon.com/singlesignon/latest/OIDCAPIReference/API_CreateToken.html)
-	// in the IAM Identity Center OIDC API Reference Guide.
+	// The token issued by the CreateToken API call. For more information, see [CreateToken] in the
+	// IAM Identity Center OIDC API Reference Guide.
+	//
+	// [CreateToken]: https://docs.aws.amazon.com/singlesignon/latest/OIDCAPIReference/API_CreateToken.html
 	//
 	// This member is required.
 	AccessToken *string
@@ -67,9 +67,6 @@ type ListAccountRolesOutput struct {
 }
 
 func (c *Client) addOperationListAccountRolesMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsRestjson1_serializeOpListAccountRoles{}, middleware.After)
 	if err != nil {
 		return err
@@ -78,17 +75,8 @@ func (c *Client) addOperationListAccountRolesMiddlewares(stack *middleware.Stack
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "ListAccountRoles"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -97,16 +85,7 @@ func (c *Client) addOperationListAccountRolesMiddlewares(stack *middleware.Stack
 	if err = addResolveEndpointMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -115,16 +94,13 @@ func (c *Client) addOperationListAccountRolesMiddlewares(stack *middleware.Stack
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpListAccountRolesValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opListAccountRoles(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "ListAccountRoles"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -139,16 +115,11 @@ func (c *Client) addOperationListAccountRolesMiddlewares(stack *middleware.Stack
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
+	if err = addInterceptors(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
-
-// ListAccountRolesAPIClient is a client that implements the ListAccountRoles
-// operation.
-type ListAccountRolesAPIClient interface {
-	ListAccountRoles(context.Context, *ListAccountRolesInput, ...func(*Options)) (*ListAccountRolesOutput, error)
-}
-
-var _ ListAccountRolesAPIClient = (*Client)(nil)
 
 // ListAccountRolesPaginatorOptions is the paginator options for ListAccountRoles
 type ListAccountRolesPaginatorOptions struct {
@@ -213,6 +184,9 @@ func (p *ListAccountRolesPaginator) NextPage(ctx context.Context, optFns ...func
 	}
 	params.MaxResults = limit
 
+	optFns = append([]func(*Options){
+		addIsPaginatorUserAgent,
+	}, optFns...)
 	result, err := p.client.ListAccountRoles(ctx, &params, optFns...)
 	if err != nil {
 		return nil, err
@@ -232,10 +206,10 @@ func (p *ListAccountRolesPaginator) NextPage(ctx context.Context, optFns ...func
 	return result, nil
 }
 
-func newServiceMetadataMiddleware_opListAccountRoles(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "ListAccountRoles",
-	}
+// ListAccountRolesAPIClient is a client that implements the ListAccountRoles
+// operation.
+type ListAccountRolesAPIClient interface {
+	ListAccountRoles(context.Context, *ListAccountRolesInput, ...func(*Options)) (*ListAccountRolesOutput, error)
 }
+
+var _ ListAccountRolesAPIClient = (*Client)(nil)

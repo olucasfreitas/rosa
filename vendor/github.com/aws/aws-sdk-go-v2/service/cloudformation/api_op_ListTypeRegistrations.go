@@ -5,7 +5,6 @@ package cloudformation
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -35,27 +34,28 @@ type ListTypeRegistrationsInput struct {
 	// set of results.
 	MaxResults *int32
 
-	// If the previous paginated request didn't return all the remaining results, the
-	// response object's NextToken parameter value is set to a token. To retrieve the
-	// next set of results, call this action again and assign that token to the request
-	// object's NextToken parameter. If there are no remaining results, the previous
-	// response object's NextToken parameter is set to null .
+	// The token for the next set of items to return. (You received this token from a
+	// previous call.)
 	NextToken *string
 
-	// The current status of the extension registration request. The default is
-	// IN_PROGRESS .
+	// The current status of the extension registration request.
+	//
+	// The default is IN_PROGRESS .
 	RegistrationStatusFilter types.RegistrationStatus
 
-	// The kind of extension. Conditional: You must specify either TypeName and Type ,
-	// or Arn .
+	// The kind of extension.
+	//
+	// Conditional: You must specify either TypeName and Type , or Arn .
 	Type types.RegistryType
 
-	// The Amazon Resource Name (ARN) of the extension. Conditional: You must specify
-	// either TypeName and Type , or Arn .
+	// The Amazon Resource Name (ARN) of the extension.
+	//
+	// Conditional: You must specify either TypeName and Type , or Arn .
 	TypeArn *string
 
-	// The name of the extension. Conditional: You must specify either TypeName and
-	// Type , or Arn .
+	// The name of the extension.
+	//
+	// Conditional: You must specify either TypeName and Type , or Arn .
 	TypeName *string
 
 	noSmithyDocumentSerde
@@ -69,8 +69,9 @@ type ListTypeRegistrationsOutput struct {
 	// all results, NextToken is set to null .
 	NextToken *string
 
-	// A list of extension registration tokens. Use DescribeTypeRegistration to return
-	// detailed information about a type registration request.
+	// A list of extension registration tokens.
+	//
+	// Use DescribeTypeRegistration to return detailed information about a type registration request.
 	RegistrationTokenList []string
 
 	// Metadata pertaining to the operation's result.
@@ -80,9 +81,6 @@ type ListTypeRegistrationsOutput struct {
 }
 
 func (c *Client) addOperationListTypeRegistrationsMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsAwsquery_serializeOpListTypeRegistrations{}, middleware.After)
 	if err != nil {
 		return err
@@ -91,17 +89,8 @@ func (c *Client) addOperationListTypeRegistrationsMiddlewares(stack *middleware.
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "ListTypeRegistrations"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -113,16 +102,7 @@ func (c *Client) addOperationListTypeRegistrationsMiddlewares(stack *middleware.
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -131,13 +111,10 @@ func (c *Client) addOperationListTypeRegistrationsMiddlewares(stack *middleware.
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opListTypeRegistrations(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "ListTypeRegistrations"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -152,16 +129,11 @@ func (c *Client) addOperationListTypeRegistrationsMiddlewares(stack *middleware.
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
+	if err = addInterceptors(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
-
-// ListTypeRegistrationsAPIClient is a client that implements the
-// ListTypeRegistrations operation.
-type ListTypeRegistrationsAPIClient interface {
-	ListTypeRegistrations(context.Context, *ListTypeRegistrationsInput, ...func(*Options)) (*ListTypeRegistrationsOutput, error)
-}
-
-var _ ListTypeRegistrationsAPIClient = (*Client)(nil)
 
 // ListTypeRegistrationsPaginatorOptions is the paginator options for
 // ListTypeRegistrations
@@ -230,6 +202,9 @@ func (p *ListTypeRegistrationsPaginator) NextPage(ctx context.Context, optFns ..
 	}
 	params.MaxResults = limit
 
+	optFns = append([]func(*Options){
+		addIsPaginatorUserAgent,
+	}, optFns...)
 	result, err := p.client.ListTypeRegistrations(ctx, &params, optFns...)
 	if err != nil {
 		return nil, err
@@ -249,10 +224,10 @@ func (p *ListTypeRegistrationsPaginator) NextPage(ctx context.Context, optFns ..
 	return result, nil
 }
 
-func newServiceMetadataMiddleware_opListTypeRegistrations(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "ListTypeRegistrations",
-	}
+// ListTypeRegistrationsAPIClient is a client that implements the
+// ListTypeRegistrations operation.
+type ListTypeRegistrationsAPIClient interface {
+	ListTypeRegistrations(context.Context, *ListTypeRegistrationsInput, ...func(*Options)) (*ListTypeRegistrationsOutput, error)
 }
+
+var _ ListTypeRegistrationsAPIClient = (*Client)(nil)

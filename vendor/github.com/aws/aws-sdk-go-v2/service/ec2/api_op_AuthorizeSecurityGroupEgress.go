@@ -4,29 +4,35 @@ package ec2
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Adds the specified outbound (egress) rules to a security group. An outbound
-// rule permits instances to send traffic to the specified IPv4 or IPv6 address
-// ranges, the IP address ranges specified by a prefix list, or the instances that
-// are associated with a source security group. For more information, see Security
-// group rules (https://docs.aws.amazon.com/vpc/latest/userguide/security-group-rules.html)
-// . You must specify exactly one of the following destinations: an IPv4 or IPv6
+// Adds the specified outbound (egress) rules to a security group.
+//
+// An outbound rule permits instances to send traffic to the specified IPv4 or
+// IPv6 address ranges, the IP address ranges specified by a prefix list, or the
+// instances that are associated with a source security group. For more
+// information, see [Security group rules].
+//
+// You must specify exactly one of the following destinations: an IPv4 or IPv6
 // address range, a prefix list, or a security group. You must specify a protocol
 // for each rule (for example, TCP). If the protocol is TCP or UDP, you must also
 // specify a port or port range. If the protocol is ICMP or ICMPv6, you must also
-// specify the ICMP type and code. Rule changes are propagated to instances
-// associated with the security group as quickly as possible. However, a small
-// delay might occur. For examples of rules that you can add to security groups for
-// specific access scenarios, see Security group rules for different use cases (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/security-group-rules-reference.html)
-// in the Amazon EC2 User Guide. For information about security group quotas, see
-// Amazon VPC quotas (https://docs.aws.amazon.com/vpc/latest/userguide/amazon-vpc-limits.html)
-// in the Amazon VPC User Guide.
+// specify the ICMP type and code.
+//
+// Rule changes are propagated to instances associated with the security group as
+// quickly as possible. However, a small delay might occur.
+//
+// For examples of rules that you can add to security groups for specific access
+// scenarios, see [Security group rules for different use cases]in the Amazon EC2 User Guide.
+//
+// For information about security group quotas, see [Amazon VPC quotas] in the Amazon VPC User Guide.
+//
+// [Amazon VPC quotas]: https://docs.aws.amazon.com/vpc/latest/userguide/amazon-vpc-limits.html
+// [Security group rules]: https://docs.aws.amazon.com/vpc/latest/userguide/security-group-rules.html
+// [Security group rules for different use cases]: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/security-group-rules-reference.html
 func (c *Client) AuthorizeSecurityGroupEgress(ctx context.Context, params *AuthorizeSecurityGroupEgressInput, optFns ...func(*Options)) (*AuthorizeSecurityGroupEgressOutput, error) {
 	if params == nil {
 		params = &AuthorizeSecurityGroupEgressInput{}
@@ -97,9 +103,6 @@ type AuthorizeSecurityGroupEgressOutput struct {
 }
 
 func (c *Client) addOperationAuthorizeSecurityGroupEgressMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpAuthorizeSecurityGroupEgress{}, middleware.After)
 	if err != nil {
 		return err
@@ -108,17 +111,8 @@ func (c *Client) addOperationAuthorizeSecurityGroupEgressMiddlewares(stack *midd
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "AuthorizeSecurityGroupEgress"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -130,16 +124,7 @@ func (c *Client) addOperationAuthorizeSecurityGroupEgressMiddlewares(stack *midd
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -148,16 +133,13 @@ func (c *Client) addOperationAuthorizeSecurityGroupEgressMiddlewares(stack *midd
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpAuthorizeSecurityGroupEgressValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opAuthorizeSecurityGroupEgress(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "AuthorizeSecurityGroupEgress"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -172,13 +154,8 @@ func (c *Client) addOperationAuthorizeSecurityGroupEgressMiddlewares(stack *midd
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opAuthorizeSecurityGroupEgress(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "AuthorizeSecurityGroupEgress",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

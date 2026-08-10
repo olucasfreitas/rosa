@@ -4,8 +4,6 @@ package servicequotas
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
@@ -35,14 +33,14 @@ type DeleteServiceQuotaIncreaseRequestFromTemplateInput struct {
 	AwsRegion *string
 
 	// Specifies the quota identifier. To find the quota code for a specific quota,
-	// use the ListServiceQuotas operation, and look for the QuotaCode response in the
-	// output for the quota you want.
+	// use the ListServiceQuotasoperation, and look for the QuotaCode response in the output for the
+	// quota you want.
 	//
 	// This member is required.
 	QuotaCode *string
 
 	// Specifies the service identifier. To find the service code value for an Amazon
-	// Web Services service, use the ListServices operation.
+	// Web Services service, use the ListServicesoperation.
 	//
 	// This member is required.
 	ServiceCode *string
@@ -58,9 +56,6 @@ type DeleteServiceQuotaIncreaseRequestFromTemplateOutput struct {
 }
 
 func (c *Client) addOperationDeleteServiceQuotaIncreaseRequestFromTemplateMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpDeleteServiceQuotaIncreaseRequestFromTemplate{}, middleware.After)
 	if err != nil {
 		return err
@@ -69,17 +64,8 @@ func (c *Client) addOperationDeleteServiceQuotaIncreaseRequestFromTemplateMiddle
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DeleteServiceQuotaIncreaseRequestFromTemplate"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -91,16 +77,7 @@ func (c *Client) addOperationDeleteServiceQuotaIncreaseRequestFromTemplateMiddle
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -109,16 +86,13 @@ func (c *Client) addOperationDeleteServiceQuotaIncreaseRequestFromTemplateMiddle
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpDeleteServiceQuotaIncreaseRequestFromTemplateValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDeleteServiceQuotaIncreaseRequestFromTemplate(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DeleteServiceQuotaIncreaseRequestFromTemplate"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -133,13 +107,8 @@ func (c *Client) addOperationDeleteServiceQuotaIncreaseRequestFromTemplateMiddle
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opDeleteServiceQuotaIncreaseRequestFromTemplate(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DeleteServiceQuotaIncreaseRequestFromTemplate",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

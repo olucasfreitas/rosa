@@ -4,21 +4,24 @@ package ec2
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Modifies the specified event window. You can define either a set of time ranges
-// or a cron expression when modifying the event window, but not both. To modify
-// the targets associated with the event window, use the
-// AssociateInstanceEventWindow and DisassociateInstanceEventWindow API. If Amazon
-// Web Services has already scheduled an event, modifying an event window won't
-// change the time of the scheduled event. For more information, see Define event
-// windows for scheduled events (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/event-windows.html)
-// in the Amazon EC2 User Guide.
+// Modifies the specified event window.
+//
+// You can define either a set of time ranges or a cron expression when modifying
+// the event window, but not both.
+//
+// To modify the targets associated with the event window, use the AssociateInstanceEventWindow and DisassociateInstanceEventWindow API.
+//
+// If Amazon Web Services has already scheduled an event, modifying an event
+// window won't change the time of the scheduled event.
+//
+// For more information, see [Define event windows for scheduled events] in the Amazon EC2 User Guide.
+//
+// [Define event windows for scheduled events]: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/event-windows.html
 func (c *Client) ModifyInstanceEventWindow(ctx context.Context, params *ModifyInstanceEventWindowInput, optFns ...func(*Options)) (*ModifyInstanceEventWindowOutput, error) {
 	if params == nil {
 		params = &ModifyInstanceEventWindowInput{}
@@ -42,18 +45,27 @@ type ModifyInstanceEventWindowInput struct {
 	InstanceEventWindowId *string
 
 	// The cron expression of the event window, for example, * 0-4,20-23 * * 1,5 .
+	//
 	// Constraints:
+	//
 	//   - Only hour and day of the week values are supported.
+	//
 	//   - For day of the week values, you can specify either integers 0 through 6 , or
 	//   alternative single values SUN through SAT .
+	//
 	//   - The minute, month, and year must be specified by * .
+	//
 	//   - The hour value must be one or a multiple range, for example, 0-4 or
 	//   0-4,20-23 .
+	//
 	//   - Each hour range must be >= 2 hours, for example, 0-2 or 20-23 .
+	//
 	//   - The event window must be >= 4 hours. The combined total time ranges in the
 	//   event window must be >= 4 hours.
-	// For more information about cron expressions, see cron (https://en.wikipedia.org/wiki/Cron)
-	// on the Wikipedia website.
+	//
+	// For more information about cron expressions, see [cron] on the Wikipedia website.
+	//
+	// [cron]: https://en.wikipedia.org/wiki/Cron
 	CronExpression *string
 
 	// Checks whether you have the required permissions for the action, without
@@ -83,9 +95,6 @@ type ModifyInstanceEventWindowOutput struct {
 }
 
 func (c *Client) addOperationModifyInstanceEventWindowMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpModifyInstanceEventWindow{}, middleware.After)
 	if err != nil {
 		return err
@@ -94,17 +103,8 @@ func (c *Client) addOperationModifyInstanceEventWindowMiddlewares(stack *middlew
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "ModifyInstanceEventWindow"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -116,16 +116,7 @@ func (c *Client) addOperationModifyInstanceEventWindowMiddlewares(stack *middlew
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -134,16 +125,13 @@ func (c *Client) addOperationModifyInstanceEventWindowMiddlewares(stack *middlew
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpModifyInstanceEventWindowValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opModifyInstanceEventWindow(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "ModifyInstanceEventWindow"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -158,13 +146,8 @@ func (c *Client) addOperationModifyInstanceEventWindowMiddlewares(stack *middlew
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opModifyInstanceEventWindow(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "ModifyInstanceEventWindow",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

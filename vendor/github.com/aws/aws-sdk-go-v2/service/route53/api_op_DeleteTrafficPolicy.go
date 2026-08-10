@@ -4,21 +4,25 @@ package route53
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Deletes a traffic policy. When you delete a traffic policy, Route 53 sets a
-// flag on the policy to indicate that it has been deleted. However, Route 53 never
-// fully deletes the traffic policy. Note the following:
-//   - Deleted traffic policies aren't listed if you run ListTrafficPolicies (https://docs.aws.amazon.com/Route53/latest/APIReference/API_ListTrafficPolicies.html)
-//     .
+// Deletes a traffic policy.
+//
+// When you delete a traffic policy, Route 53 sets a flag on the policy to
+// indicate that it has been deleted. However, Route 53 never fully deletes the
+// traffic policy. Note the following:
+//
+//   - Deleted traffic policies aren't listed if you run [ListTrafficPolicies].
+//
 //   - There's no way to get a list of deleted policies.
+//
 //   - If you retain the ID of the policy, you can get information about the
-//     policy, including the traffic policy document, by running GetTrafficPolicy (https://docs.aws.amazon.com/Route53/latest/APIReference/API_GetTrafficPolicy.html)
-//     .
+//     policy, including the traffic policy document, by running [GetTrafficPolicy].
+//
+// [ListTrafficPolicies]: https://docs.aws.amazon.com/Route53/latest/APIReference/API_ListTrafficPolicies.html
+// [GetTrafficPolicy]: https://docs.aws.amazon.com/Route53/latest/APIReference/API_GetTrafficPolicy.html
 func (c *Client) DeleteTrafficPolicy(ctx context.Context, params *DeleteTrafficPolicyInput, optFns ...func(*Options)) (*DeleteTrafficPolicyOutput, error) {
 	if params == nil {
 		params = &DeleteTrafficPolicyInput{}
@@ -59,9 +63,6 @@ type DeleteTrafficPolicyOutput struct {
 }
 
 func (c *Client) addOperationDeleteTrafficPolicyMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsRestxml_serializeOpDeleteTrafficPolicy{}, middleware.After)
 	if err != nil {
 		return err
@@ -70,17 +71,8 @@ func (c *Client) addOperationDeleteTrafficPolicyMiddlewares(stack *middleware.St
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DeleteTrafficPolicy"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -92,16 +84,7 @@ func (c *Client) addOperationDeleteTrafficPolicyMiddlewares(stack *middleware.St
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -110,16 +93,13 @@ func (c *Client) addOperationDeleteTrafficPolicyMiddlewares(stack *middleware.St
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpDeleteTrafficPolicyValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDeleteTrafficPolicy(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DeleteTrafficPolicy"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -134,13 +114,8 @@ func (c *Client) addOperationDeleteTrafficPolicyMiddlewares(stack *middleware.St
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opDeleteTrafficPolicy(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DeleteTrafficPolicy",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

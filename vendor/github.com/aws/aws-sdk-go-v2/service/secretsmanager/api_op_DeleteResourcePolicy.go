@@ -4,21 +4,23 @@ package secretsmanager
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // Deletes the resource-based permission policy attached to the secret. To attach
-// a policy to a secret, use PutResourcePolicy . Secrets Manager generates a
-// CloudTrail log entry when you call this action. Do not include sensitive
-// information in request parameters because it might be logged. For more
-// information, see Logging Secrets Manager events with CloudTrail (https://docs.aws.amazon.com/secretsmanager/latest/userguide/retrieve-ct-entries.html)
-// . Required permissions: secretsmanager:DeleteResourcePolicy . For more
-// information, see IAM policy actions for Secrets Manager (https://docs.aws.amazon.com/secretsmanager/latest/userguide/reference_iam-permissions.html#reference_iam-permissions_actions)
-// and Authentication and access control in Secrets Manager (https://docs.aws.amazon.com/secretsmanager/latest/userguide/auth-and-access.html)
-// .
+// a policy to a secret, use PutResourcePolicy.
+//
+// Secrets Manager generates a CloudTrail log entry when you call this action. Do
+// not include sensitive information in request parameters because it might be
+// logged. For more information, see [Logging Secrets Manager events with CloudTrail].
+//
+// Required permissions: secretsmanager:DeleteResourcePolicy . For more
+// information, see [IAM policy actions for Secrets Manager]and [Authentication and access control in Secrets Manager].
+//
+// [Authentication and access control in Secrets Manager]: https://docs.aws.amazon.com/secretsmanager/latest/userguide/auth-and-access.html
+// [Logging Secrets Manager events with CloudTrail]: https://docs.aws.amazon.com/secretsmanager/latest/userguide/retrieve-ct-entries.html
+// [IAM policy actions for Secrets Manager]: https://docs.aws.amazon.com/secretsmanager/latest/userguide/reference_iam-permissions.html#reference_iam-permissions_actions
 func (c *Client) DeleteResourcePolicy(ctx context.Context, params *DeleteResourcePolicyInput, optFns ...func(*Options)) (*DeleteResourcePolicyOutput, error) {
 	if params == nil {
 		params = &DeleteResourcePolicyInput{}
@@ -37,9 +39,11 @@ func (c *Client) DeleteResourcePolicy(ctx context.Context, params *DeleteResourc
 type DeleteResourcePolicyInput struct {
 
 	// The ARN or name of the secret to delete the attached resource-based policy for.
+	//
 	// For an ARN, we recommend that you specify a complete ARN rather than a partial
-	// ARN. See Finding a secret from a partial ARN (https://docs.aws.amazon.com/secretsmanager/latest/userguide/troubleshoot.html#ARN_secretnamehyphen)
-	// .
+	// ARN. See [Finding a secret from a partial ARN].
+	//
+	// [Finding a secret from a partial ARN]: https://docs.aws.amazon.com/secretsmanager/latest/userguide/troubleshoot.html#ARN_secretnamehyphen
 	//
 	// This member is required.
 	SecretId *string
@@ -62,9 +66,6 @@ type DeleteResourcePolicyOutput struct {
 }
 
 func (c *Client) addOperationDeleteResourcePolicyMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpDeleteResourcePolicy{}, middleware.After)
 	if err != nil {
 		return err
@@ -73,17 +74,8 @@ func (c *Client) addOperationDeleteResourcePolicyMiddlewares(stack *middleware.S
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DeleteResourcePolicy"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -95,16 +87,7 @@ func (c *Client) addOperationDeleteResourcePolicyMiddlewares(stack *middleware.S
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -113,16 +96,13 @@ func (c *Client) addOperationDeleteResourcePolicyMiddlewares(stack *middleware.S
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpDeleteResourcePolicyValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDeleteResourcePolicy(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DeleteResourcePolicy"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -137,13 +117,8 @@ func (c *Client) addOperationDeleteResourcePolicyMiddlewares(stack *middleware.S
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opDeleteResourcePolicy(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DeleteResourcePolicy",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

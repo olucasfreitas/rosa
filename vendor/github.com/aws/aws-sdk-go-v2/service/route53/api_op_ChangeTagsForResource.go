@@ -4,16 +4,17 @@ package route53
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/route53/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Adds, edits, or deletes tags for a health check or a hosted zone. For
-// information about using tags for cost allocation, see Using Cost Allocation Tags (https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/cost-alloc-tags.html)
-// in the Billing and Cost Management User Guide.
+// Adds, edits, or deletes tags for a health check or a hosted zone.
+//
+// For information about using tags for cost allocation, see [Using Cost Allocation Tags] in the Billing and
+// Cost Management User Guide.
+//
+// [Using Cost Allocation Tags]: https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/cost-alloc-tags.html
 func (c *Client) ChangeTagsForResource(ctx context.Context, params *ChangeTagsForResourceInput, optFns ...func(*Options)) (*ChangeTagsForResourceOutput, error) {
 	if params == nil {
 		params = &ChangeTagsForResourceInput{}
@@ -39,7 +40,9 @@ type ChangeTagsForResourceInput struct {
 	ResourceId *string
 
 	// The type of the resource.
+	//
 	//   - The resource type for health checks is healthcheck .
+	//
 	//   - The resource type for hosted zones is hostedzone .
 	//
 	// This member is required.
@@ -47,7 +50,9 @@ type ChangeTagsForResourceInput struct {
 
 	// A complex type that contains a list of the tags that you want to add to the
 	// specified health check or hosted zone and/or the tags that you want to edit
-	// Value for. You can add a maximum of 10 tags to a health check or a hosted zone.
+	// Value for.
+	//
+	// You can add a maximum of 10 tags to a health check or a hosted zone.
 	AddTags []types.Tag
 
 	// A complex type that contains a list of the tags that you want to delete from
@@ -66,9 +71,6 @@ type ChangeTagsForResourceOutput struct {
 }
 
 func (c *Client) addOperationChangeTagsForResourceMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsRestxml_serializeOpChangeTagsForResource{}, middleware.After)
 	if err != nil {
 		return err
@@ -77,17 +79,8 @@ func (c *Client) addOperationChangeTagsForResourceMiddlewares(stack *middleware.
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "ChangeTagsForResource"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -99,16 +92,7 @@ func (c *Client) addOperationChangeTagsForResourceMiddlewares(stack *middleware.
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -117,16 +101,13 @@ func (c *Client) addOperationChangeTagsForResourceMiddlewares(stack *middleware.
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpChangeTagsForResourceValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opChangeTagsForResource(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "ChangeTagsForResource"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -141,13 +122,8 @@ func (c *Client) addOperationChangeTagsForResourceMiddlewares(stack *middleware.
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opChangeTagsForResource(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "ChangeTagsForResource",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

@@ -4,21 +4,23 @@ package secretsmanager
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // Cancels the scheduled deletion of a secret by removing the DeletedDate time
-// stamp. You can access a secret again after it has been restored. Secrets Manager
-// generates a CloudTrail log entry when you call this action. Do not include
-// sensitive information in request parameters because it might be logged. For more
-// information, see Logging Secrets Manager events with CloudTrail (https://docs.aws.amazon.com/secretsmanager/latest/userguide/retrieve-ct-entries.html)
-// . Required permissions: secretsmanager:RestoreSecret . For more information, see
-// IAM policy actions for Secrets Manager (https://docs.aws.amazon.com/secretsmanager/latest/userguide/reference_iam-permissions.html#reference_iam-permissions_actions)
-// and Authentication and access control in Secrets Manager (https://docs.aws.amazon.com/secretsmanager/latest/userguide/auth-and-access.html)
-// .
+// stamp. You can access a secret again after it has been restored.
+//
+// Secrets Manager generates a CloudTrail log entry when you call this action. Do
+// not include sensitive information in request parameters because it might be
+// logged. For more information, see [Logging Secrets Manager events with CloudTrail].
+//
+// Required permissions: secretsmanager:RestoreSecret . For more information, see [IAM policy actions for Secrets Manager]
+// and [Authentication and access control in Secrets Manager].
+//
+// [Authentication and access control in Secrets Manager]: https://docs.aws.amazon.com/secretsmanager/latest/userguide/auth-and-access.html
+// [Logging Secrets Manager events with CloudTrail]: https://docs.aws.amazon.com/secretsmanager/latest/userguide/retrieve-ct-entries.html
+// [IAM policy actions for Secrets Manager]: https://docs.aws.amazon.com/secretsmanager/latest/userguide/reference_iam-permissions.html#reference_iam-permissions_actions
 func (c *Client) RestoreSecret(ctx context.Context, params *RestoreSecretInput, optFns ...func(*Options)) (*RestoreSecretOutput, error) {
 	if params == nil {
 		params = &RestoreSecretInput{}
@@ -36,10 +38,12 @@ func (c *Client) RestoreSecret(ctx context.Context, params *RestoreSecretInput, 
 
 type RestoreSecretInput struct {
 
-	// The ARN or name of the secret to restore. For an ARN, we recommend that you
-	// specify a complete ARN rather than a partial ARN. See Finding a secret from a
-	// partial ARN (https://docs.aws.amazon.com/secretsmanager/latest/userguide/troubleshoot.html#ARN_secretnamehyphen)
-	// .
+	// The ARN or name of the secret to restore.
+	//
+	// For an ARN, we recommend that you specify a complete ARN rather than a partial
+	// ARN. See [Finding a secret from a partial ARN].
+	//
+	// [Finding a secret from a partial ARN]: https://docs.aws.amazon.com/secretsmanager/latest/userguide/troubleshoot.html#ARN_secretnamehyphen
 	//
 	// This member is required.
 	SecretId *string
@@ -62,9 +66,6 @@ type RestoreSecretOutput struct {
 }
 
 func (c *Client) addOperationRestoreSecretMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpRestoreSecret{}, middleware.After)
 	if err != nil {
 		return err
@@ -73,17 +74,8 @@ func (c *Client) addOperationRestoreSecretMiddlewares(stack *middleware.Stack, o
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "RestoreSecret"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -95,16 +87,7 @@ func (c *Client) addOperationRestoreSecretMiddlewares(stack *middleware.Stack, o
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -113,16 +96,13 @@ func (c *Client) addOperationRestoreSecretMiddlewares(stack *middleware.Stack, o
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpRestoreSecretValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opRestoreSecret(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "RestoreSecret"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -137,13 +117,8 @@ func (c *Client) addOperationRestoreSecretMiddlewares(stack *middleware.Stack, o
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opRestoreSecret(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "RestoreSecret",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

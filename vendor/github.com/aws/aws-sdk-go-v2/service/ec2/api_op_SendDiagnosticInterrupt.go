@@ -4,8 +4,6 @@ package ec2
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
@@ -13,17 +11,21 @@ import (
 // Sends a diagnostic interrupt to the specified Amazon EC2 instance to trigger a
 // kernel panic (on Linux instances), or a blue screen/stop error (on Windows
 // instances). For instances based on Intel and AMD processors, the interrupt is
-// received as a non-maskable interrupt (NMI). In general, the operating system
-// crashes and reboots when a kernel panic or stop error is triggered. The
-// operating system can also be configured to perform diagnostic tasks, such as
-// generating a memory dump file, loading a secondary kernel, or obtaining a call
-// trace. Before sending a diagnostic interrupt to your instance, ensure that its
-// operating system is configured to perform the required diagnostic tasks. For
-// more information about configuring your operating system to generate a crash
-// dump when a kernel panic or stop error occurs, see Send a diagnostic interrupt
-// (for advanced users) (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/diagnostic-interrupt.html)
-// (Linux instances) or Send a diagnostic interrupt (for advanced users) (https://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/diagnostic-interrupt.html)
-// (Windows instances).
+// received as a non-maskable interrupt (NMI).
+//
+// In general, the operating system crashes and reboots when a kernel panic or
+// stop error is triggered. The operating system can also be configured to perform
+// diagnostic tasks, such as generating a memory dump file, loading a secondary
+// kernel, or obtaining a call trace.
+//
+// Before sending a diagnostic interrupt to your instance, ensure that its
+// operating system is configured to perform the required diagnostic tasks.
+//
+// For more information about configuring your operating system to generate a
+// crash dump when a kernel panic or stop error occurs, see [Send a diagnostic interrupt (for advanced users)]in the Amazon EC2 User
+// Guide.
+//
+// [Send a diagnostic interrupt (for advanced users)]: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/diagnostic-interrupt.html
 func (c *Client) SendDiagnosticInterrupt(ctx context.Context, params *SendDiagnosticInterruptInput, optFns ...func(*Options)) (*SendDiagnosticInterruptOutput, error) {
 	if params == nil {
 		params = &SendDiagnosticInterruptInput{}
@@ -46,7 +48,7 @@ type SendDiagnosticInterruptInput struct {
 	// This member is required.
 	InstanceId *string
 
-	// Checks whether you have the required permissions for the action, without
+	// Checks whether you have the required permissions for the operation, without
 	// actually making the request, and provides an error response. If you have the
 	// required permissions, the error response is DryRunOperation . Otherwise, it is
 	// UnauthorizedOperation .
@@ -63,9 +65,6 @@ type SendDiagnosticInterruptOutput struct {
 }
 
 func (c *Client) addOperationSendDiagnosticInterruptMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpSendDiagnosticInterrupt{}, middleware.After)
 	if err != nil {
 		return err
@@ -74,17 +73,8 @@ func (c *Client) addOperationSendDiagnosticInterruptMiddlewares(stack *middlewar
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "SendDiagnosticInterrupt"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -96,16 +86,7 @@ func (c *Client) addOperationSendDiagnosticInterruptMiddlewares(stack *middlewar
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -114,16 +95,13 @@ func (c *Client) addOperationSendDiagnosticInterruptMiddlewares(stack *middlewar
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpSendDiagnosticInterruptValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opSendDiagnosticInterrupt(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "SendDiagnosticInterrupt"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -138,13 +116,8 @@ func (c *Client) addOperationSendDiagnosticInterruptMiddlewares(stack *middlewar
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opSendDiagnosticInterrupt(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "SendDiagnosticInterrupt",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

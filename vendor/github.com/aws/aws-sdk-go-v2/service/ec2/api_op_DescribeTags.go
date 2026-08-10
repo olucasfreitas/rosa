@@ -5,19 +5,24 @@ package ec2
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Describes the specified tags for your EC2 resources. For more information about
-// tags, see Tag your Amazon EC2 resources (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Using_Tags.html)
-// in the Amazon Elastic Compute Cloud User Guide. We strongly recommend using only
-// paginated requests. Unpaginated requests are susceptible to throttling and
-// timeouts. The order of the elements in the response, including those within
-// nested structures, might vary. Applications should not assume the elements
-// appear in a particular order.
+// Describes the specified tags for your EC2 resources.
+//
+// For more information about tags, see [Tag your Amazon EC2 resources] in the Amazon Elastic Compute Cloud User
+// Guide.
+//
+// We strongly recommend using only paginated requests. Unpaginated requests are
+// susceptible to throttling and timeouts.
+//
+// The order of the elements in the response, including those within nested
+// structures, might vary. Applications should not assume the elements appear in a
+// particular order.
+//
+// [Tag your Amazon EC2 resources]: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/Using_Tags.html
 func (c *Client) DescribeTags(ctx context.Context, params *DescribeTagsInput, optFns ...func(*Options)) (*DescribeTagsOutput, error) {
 	if params == nil {
 		params = &DescribeTagsInput{}
@@ -42,21 +47,27 @@ type DescribeTagsInput struct {
 	DryRun *bool
 
 	// The filters.
+	//
 	//   - key - The tag key.
+	//
 	//   - resource-id - The ID of the resource.
-	//   - resource-type - The resource type. For a list of possible values, see
-	//   TagSpecification (https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_TagSpecification.html)
-	//   .
+	//
+	//   - resource-type - The resource type. For a list of possible values, see [TagSpecification].
+	//
 	//   - tag : - The key/value combination of the tag. For example, specify
 	//   "tag:Owner" for the filter name and "TeamA" for the filter value to find
 	//   resources with the tag "Owner=TeamA".
+	//
 	//   - value - The tag value.
+	//
+	// [TagSpecification]: https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_TagSpecification.html
 	Filters []types.Filter
 
 	// The maximum number of items to return for this request. This value can be
 	// between 5 and 1000. To get the next page of items, make another request with the
-	// token returned in the output. For more information, see Pagination (https://docs.aws.amazon.com/AWSEC2/latest/APIReference/Query-Requests.html#api-pagination)
-	// .
+	// token returned in the output. For more information, see [Pagination].
+	//
+	// [Pagination]: https://docs.aws.amazon.com/AWSEC2/latest/APIReference/Query-Requests.html#api-pagination
 	MaxResults *int32
 
 	// The token returned from a previous paginated request. Pagination continues from
@@ -82,9 +93,6 @@ type DescribeTagsOutput struct {
 }
 
 func (c *Client) addOperationDescribeTagsMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpDescribeTags{}, middleware.After)
 	if err != nil {
 		return err
@@ -93,17 +101,8 @@ func (c *Client) addOperationDescribeTagsMiddlewares(stack *middleware.Stack, op
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeTags"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -115,16 +114,7 @@ func (c *Client) addOperationDescribeTagsMiddlewares(stack *middleware.Stack, op
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -133,13 +123,10 @@ func (c *Client) addOperationDescribeTagsMiddlewares(stack *middleware.Stack, op
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeTags(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DescribeTags"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -154,22 +141,19 @@ func (c *Client) addOperationDescribeTagsMiddlewares(stack *middleware.Stack, op
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
+	if err = addInterceptors(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
-
-// DescribeTagsAPIClient is a client that implements the DescribeTags operation.
-type DescribeTagsAPIClient interface {
-	DescribeTags(context.Context, *DescribeTagsInput, ...func(*Options)) (*DescribeTagsOutput, error)
-}
-
-var _ DescribeTagsAPIClient = (*Client)(nil)
 
 // DescribeTagsPaginatorOptions is the paginator options for DescribeTags
 type DescribeTagsPaginatorOptions struct {
 	// The maximum number of items to return for this request. This value can be
 	// between 5 and 1000. To get the next page of items, make another request with the
-	// token returned in the output. For more information, see Pagination (https://docs.aws.amazon.com/AWSEC2/latest/APIReference/Query-Requests.html#api-pagination)
-	// .
+	// token returned in the output. For more information, see [Pagination].
+	//
+	// [Pagination]: https://docs.aws.amazon.com/AWSEC2/latest/APIReference/Query-Requests.html#api-pagination
 	Limit int32
 
 	// Set to true if pagination should stop if the service returns a pagination token
@@ -230,6 +214,9 @@ func (p *DescribeTagsPaginator) NextPage(ctx context.Context, optFns ...func(*Op
 	}
 	params.MaxResults = limit
 
+	optFns = append([]func(*Options){
+		addIsPaginatorUserAgent,
+	}, optFns...)
 	result, err := p.client.DescribeTags(ctx, &params, optFns...)
 	if err != nil {
 		return nil, err
@@ -249,10 +236,9 @@ func (p *DescribeTagsPaginator) NextPage(ctx context.Context, optFns ...func(*Op
 	return result, nil
 }
 
-func newServiceMetadataMiddleware_opDescribeTags(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeTags",
-	}
+// DescribeTagsAPIClient is a client that implements the DescribeTags operation.
+type DescribeTagsAPIClient interface {
+	DescribeTags(context.Context, *DescribeTagsInput, ...func(*Options)) (*DescribeTagsOutput, error)
 }
+
+var _ DescribeTagsAPIClient = (*Client)(nil)

@@ -5,7 +5,6 @@ package ec2
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -37,18 +36,24 @@ type DescribeInstanceConnectEndpointsInput struct {
 	DryRun *bool
 
 	// One or more filters.
+	//
 	//   - instance-connect-endpoint-id - The ID of the EC2 Instance Connect Endpoint.
+	//
 	//   - state - The state of the EC2 Instance Connect Endpoint ( create-in-progress
 	//   | create-complete | create-failed | delete-in-progress | delete-complete |
 	//   delete-failed ).
+	//
 	//   - subnet-id - The ID of the subnet in which the EC2 Instance Connect Endpoint
 	//   was created.
+	//
 	//   - tag : - The key/value combination of a tag assigned to the resource. Use the
 	//   tag key in the filter name and the tag value as the filter value. For example,
 	//   to find all resources that have a tag with the key Owner and the value TeamA ,
 	//   specify tag:Owner for the filter name and TeamA for the filter value.
+	//
 	//   - tag-key - The key of a tag assigned to the resource. Use this filter to find
 	//   all resources assigned a tag with a specific key, regardless of the tag value.
+	//
 	//   - tag-value - The value of a tag assigned to the resource. Use this filter to
 	//   find all resources that have a tag with a specific value, regardless of tag key.
 	//
@@ -61,8 +66,9 @@ type DescribeInstanceConnectEndpointsInput struct {
 
 	// The maximum number of items to return for this request. To get the next page of
 	// items, make another request with the token returned in the output. For more
-	// information, see Pagination (https://docs.aws.amazon.com/AWSEC2/latest/APIReference/Query-Requests.html#api-pagination)
-	// .
+	// information, see [Pagination].
+	//
+	// [Pagination]: https://docs.aws.amazon.com/AWSEC2/latest/APIReference/Query-Requests.html#api-pagination
 	MaxResults *int32
 
 	// The token returned from a previous paginated request. Pagination continues from
@@ -88,9 +94,6 @@ type DescribeInstanceConnectEndpointsOutput struct {
 }
 
 func (c *Client) addOperationDescribeInstanceConnectEndpointsMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpDescribeInstanceConnectEndpoints{}, middleware.After)
 	if err != nil {
 		return err
@@ -99,17 +102,8 @@ func (c *Client) addOperationDescribeInstanceConnectEndpointsMiddlewares(stack *
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeInstanceConnectEndpoints"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -121,16 +115,7 @@ func (c *Client) addOperationDescribeInstanceConnectEndpointsMiddlewares(stack *
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -139,13 +124,10 @@ func (c *Client) addOperationDescribeInstanceConnectEndpointsMiddlewares(stack *
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeInstanceConnectEndpoints(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DescribeInstanceConnectEndpoints"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -160,24 +142,20 @@ func (c *Client) addOperationDescribeInstanceConnectEndpointsMiddlewares(stack *
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
+	if err = addInterceptors(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
-
-// DescribeInstanceConnectEndpointsAPIClient is a client that implements the
-// DescribeInstanceConnectEndpoints operation.
-type DescribeInstanceConnectEndpointsAPIClient interface {
-	DescribeInstanceConnectEndpoints(context.Context, *DescribeInstanceConnectEndpointsInput, ...func(*Options)) (*DescribeInstanceConnectEndpointsOutput, error)
-}
-
-var _ DescribeInstanceConnectEndpointsAPIClient = (*Client)(nil)
 
 // DescribeInstanceConnectEndpointsPaginatorOptions is the paginator options for
 // DescribeInstanceConnectEndpoints
 type DescribeInstanceConnectEndpointsPaginatorOptions struct {
 	// The maximum number of items to return for this request. To get the next page of
 	// items, make another request with the token returned in the output. For more
-	// information, see Pagination (https://docs.aws.amazon.com/AWSEC2/latest/APIReference/Query-Requests.html#api-pagination)
-	// .
+	// information, see [Pagination].
+	//
+	// [Pagination]: https://docs.aws.amazon.com/AWSEC2/latest/APIReference/Query-Requests.html#api-pagination
 	Limit int32
 
 	// Set to true if pagination should stop if the service returns a pagination token
@@ -240,6 +218,9 @@ func (p *DescribeInstanceConnectEndpointsPaginator) NextPage(ctx context.Context
 	}
 	params.MaxResults = limit
 
+	optFns = append([]func(*Options){
+		addIsPaginatorUserAgent,
+	}, optFns...)
 	result, err := p.client.DescribeInstanceConnectEndpoints(ctx, &params, optFns...)
 	if err != nil {
 		return nil, err
@@ -259,10 +240,10 @@ func (p *DescribeInstanceConnectEndpointsPaginator) NextPage(ctx context.Context
 	return result, nil
 }
 
-func newServiceMetadataMiddleware_opDescribeInstanceConnectEndpoints(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeInstanceConnectEndpoints",
-	}
+// DescribeInstanceConnectEndpointsAPIClient is a client that implements the
+// DescribeInstanceConnectEndpoints operation.
+type DescribeInstanceConnectEndpointsAPIClient interface {
+	DescribeInstanceConnectEndpoints(context.Context, *DescribeInstanceConnectEndpointsInput, ...func(*Options)) (*DescribeInstanceConnectEndpointsOutput, error)
 }
+
+var _ DescribeInstanceConnectEndpointsAPIClient = (*Client)(nil)

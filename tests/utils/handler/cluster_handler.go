@@ -710,6 +710,13 @@ func (ch *clusterHandler) GenerateClusterCreateFlags() ([]string, error) {
 				return flags, err
 			}
 
+			if waitSubnetIDs := helper.RemoveFromStringSlice(
+				strings.Split(subnetsFlagValue, ","), ""); len(waitSubnetIDs) > 0 {
+				if waitErr := waitForSubnetsVisibleFromAccount(resourcesHandler, waitSubnetIDs); waitErr != nil {
+					return flags, waitErr
+				}
+			}
+
 			dnsDomain, err := resourcesHandler.PrepareDNSDomain(ch.profile.ClusterConfig.HCP)
 			if err != nil {
 				return flags, err
@@ -970,7 +977,11 @@ func (ch *clusterHandler) GenerateClusterCreateFlags() ([]string, error) {
 		if err != nil {
 			return flags, err
 		}
-		oidcProvider := strings.TrimPrefix(oidcConfig.IssuerUrl, "https://")
+
+		oidcProvider, err := helper.ExtractOIDCProviderFromOidcUrl(oidcConfig.IssuerUrl)
+		if err != nil {
+			return flags, err
+		}
 		_, err = resourcesHandler.PrepareLogForwardRole(oidcProvider, "log_forward")
 		if err != nil {
 			return flags, err
@@ -1055,12 +1066,51 @@ func (ch *clusterHandler) WaitForClusterReady(timeoutMin int) error {
 				time.Sleep(2 * time.Minute)
 				continue
 			}
+			if description.State == constants.Ready {
+				log.Logger.Infof("Cluster %s is ready now.", clusterID)
+				return nil
+			}
 			return fmt.Errorf("unknown cluster state %s", description.State)
 		}
 
 	}
 
 	return fmt.Errorf("timeout for cluster ready waiting after %d mins", timeoutMin)
+}
+
+type clusterStateAction string
+
+const (
+	clusterStateReady     clusterStateAction = "ready"
+	clusterStateTerminal  clusterStateAction = "terminal"
+	clusterStateWaiting   clusterStateAction = "waiting"
+	clusterStateTransient clusterStateAction = "transient"
+	clusterStateUnknown   clusterStateAction = "unknown"
+)
+
+func classifyClusterState(state string) clusterStateAction {
+	if strings.TrimSpace(state) == "" {
+		return clusterStateUnknown
+	}
+
+	switch {
+	case state == constants.Ready:
+		return clusterStateReady
+	case state == constants.Uninstalling:
+		return clusterStateTerminal
+	case strings.Contains(state, constants.Error):
+		return clusterStateTerminal
+	case strings.Contains(state, constants.Waiting):
+		return clusterStateWaiting
+	case strings.Contains(state, constants.Pending):
+		return clusterStateTransient
+	case strings.Contains(state, constants.Installing):
+		return clusterStateTransient
+	case strings.Contains(state, constants.Validating):
+		return clusterStateTransient
+	default:
+		return clusterStateUnknown
+	}
 }
 
 func (ch *clusterHandler) reverifyClusterNetwork() error {

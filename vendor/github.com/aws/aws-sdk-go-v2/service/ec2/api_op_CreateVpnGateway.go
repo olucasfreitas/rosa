@@ -4,8 +4,6 @@ package ec2
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -13,9 +11,12 @@ import (
 
 // Creates a virtual private gateway. A virtual private gateway is the endpoint on
 // the VPC side of your VPN connection. You can create a virtual private gateway
-// before creating the VPC itself. For more information, see Amazon Web Services
-// Site-to-Site VPN (https://docs.aws.amazon.com/vpn/latest/s2svpn/VPC_VPN.html) in
-// the Amazon Web Services Site-to-Site VPN User Guide.
+// before creating the VPC itself.
+//
+// For more information, see [Amazon Web Services Site-to-Site VPN] in the Amazon Web Services Site-to-Site VPN User
+// Guide.
+//
+// [Amazon Web Services Site-to-Site VPN]: https://docs.aws.amazon.com/vpn/latest/s2svpn/VPC_VPN.html
 func (c *Client) CreateVpnGateway(ctx context.Context, params *CreateVpnGatewayInput, optFns ...func(*Options)) (*CreateVpnGatewayOutput, error) {
 	if params == nil {
 		params = &CreateVpnGatewayInput{}
@@ -41,8 +42,9 @@ type CreateVpnGatewayInput struct {
 
 	// A private Autonomous System Number (ASN) for the Amazon side of a BGP session.
 	// If you're using a 16-bit ASN, it must be in the 64512 to 65534 range. If you're
-	// using a 32-bit ASN, it must be in the 4200000000 to 4294967294 range. Default:
-	// 64512
+	// using a 32-bit ASN, it must be in the 4200000000 to 4294967294 range.
+	//
+	// Default: 64512
 	AmazonSideAsn *int64
 
 	// The Availability Zone for the virtual private gateway.
@@ -73,9 +75,6 @@ type CreateVpnGatewayOutput struct {
 }
 
 func (c *Client) addOperationCreateVpnGatewayMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpCreateVpnGateway{}, middleware.After)
 	if err != nil {
 		return err
@@ -84,17 +83,8 @@ func (c *Client) addOperationCreateVpnGatewayMiddlewares(stack *middleware.Stack
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "CreateVpnGateway"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -106,16 +96,7 @@ func (c *Client) addOperationCreateVpnGatewayMiddlewares(stack *middleware.Stack
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -124,16 +105,13 @@ func (c *Client) addOperationCreateVpnGatewayMiddlewares(stack *middleware.Stack
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpCreateVpnGatewayValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opCreateVpnGateway(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "CreateVpnGateway"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -148,13 +126,8 @@ func (c *Client) addOperationCreateVpnGatewayMiddlewares(stack *middleware.Stack
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opCreateVpnGateway(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "CreateVpnGateway",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

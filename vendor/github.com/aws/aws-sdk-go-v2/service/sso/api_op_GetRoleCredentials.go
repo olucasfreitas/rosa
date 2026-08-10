@@ -4,8 +4,6 @@ package sso
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/sso/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -30,9 +28,10 @@ func (c *Client) GetRoleCredentials(ctx context.Context, params *GetRoleCredenti
 
 type GetRoleCredentialsInput struct {
 
-	// The token issued by the CreateToken API call. For more information, see
-	// CreateToken (https://docs.aws.amazon.com/singlesignon/latest/OIDCAPIReference/API_CreateToken.html)
-	// in the IAM Identity Center OIDC API Reference Guide.
+	// The token issued by the CreateToken API call. For more information, see [CreateToken] in the
+	// IAM Identity Center OIDC API Reference Guide.
+	//
+	// [CreateToken]: https://docs.aws.amazon.com/singlesignon/latest/OIDCAPIReference/API_CreateToken.html
 	//
 	// This member is required.
 	AccessToken *string
@@ -62,9 +61,6 @@ type GetRoleCredentialsOutput struct {
 }
 
 func (c *Client) addOperationGetRoleCredentialsMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsRestjson1_serializeOpGetRoleCredentials{}, middleware.After)
 	if err != nil {
 		return err
@@ -73,17 +69,8 @@ func (c *Client) addOperationGetRoleCredentialsMiddlewares(stack *middleware.Sta
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "GetRoleCredentials"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -92,16 +79,7 @@ func (c *Client) addOperationGetRoleCredentialsMiddlewares(stack *middleware.Sta
 	if err = addResolveEndpointMiddleware(stack, options); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -110,16 +88,13 @@ func (c *Client) addOperationGetRoleCredentialsMiddlewares(stack *middleware.Sta
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpGetRoleCredentialsValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opGetRoleCredentials(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "GetRoleCredentials"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -134,13 +109,8 @@ func (c *Client) addOperationGetRoleCredentialsMiddlewares(stack *middleware.Sta
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opGetRoleCredentials(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "GetRoleCredentials",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

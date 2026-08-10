@@ -5,13 +5,15 @@ package ec2
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Describes one or more of your egress-only internet gateways.
+// Describes your egress-only internet gateways. The default is to describe all
+// your egress-only internet gateways. Alternatively, you can specify specific
+// egress-only internet gateway IDs or filter the results to include only the
+// egress-only internet gateways that match specific criteria.
 func (c *Client) DescribeEgressOnlyInternetGateways(ctx context.Context, params *DescribeEgressOnlyInternetGatewaysInput, optFns ...func(*Options)) (*DescribeEgressOnlyInternetGatewaysOutput, error) {
 	if params == nil {
 		params = &DescribeEgressOnlyInternetGatewaysInput{}
@@ -39,18 +41,21 @@ type DescribeEgressOnlyInternetGatewaysInput struct {
 	EgressOnlyInternetGatewayIds []string
 
 	// The filters.
-	//   - tag : - The key/value combination of a tag assigned to the resource. Use the
+	//
+	//   - tag - The key/value combination of a tag assigned to the resource. Use the
 	//   tag key in the filter name and the tag value as the filter value. For example,
 	//   to find all resources that have a tag with the key Owner and the value TeamA ,
 	//   specify tag:Owner for the filter name and TeamA for the filter value.
+	//
 	//   - tag-key - The key of a tag assigned to the resource. Use this filter to find
 	//   all resources assigned a tag with a specific key, regardless of the tag value.
 	Filters []types.Filter
 
 	// The maximum number of items to return for this request. To get the next page of
 	// items, make another request with the token returned in the output. For more
-	// information, see Pagination (https://docs.aws.amazon.com/AWSEC2/latest/APIReference/Query-Requests.html#api-pagination)
-	// .
+	// information, see [Pagination].
+	//
+	// [Pagination]: https://docs.aws.amazon.com/AWSEC2/latest/APIReference/Query-Requests.html#api-pagination
 	MaxResults *int32
 
 	// The token returned from a previous paginated request. Pagination continues from
@@ -76,9 +81,6 @@ type DescribeEgressOnlyInternetGatewaysOutput struct {
 }
 
 func (c *Client) addOperationDescribeEgressOnlyInternetGatewaysMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpDescribeEgressOnlyInternetGateways{}, middleware.After)
 	if err != nil {
 		return err
@@ -87,17 +89,8 @@ func (c *Client) addOperationDescribeEgressOnlyInternetGatewaysMiddlewares(stack
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeEgressOnlyInternetGateways"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -109,16 +102,7 @@ func (c *Client) addOperationDescribeEgressOnlyInternetGatewaysMiddlewares(stack
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -127,13 +111,10 @@ func (c *Client) addOperationDescribeEgressOnlyInternetGatewaysMiddlewares(stack
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeEgressOnlyInternetGateways(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DescribeEgressOnlyInternetGateways"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -148,24 +129,20 @@ func (c *Client) addOperationDescribeEgressOnlyInternetGatewaysMiddlewares(stack
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
+	if err = addInterceptors(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
-
-// DescribeEgressOnlyInternetGatewaysAPIClient is a client that implements the
-// DescribeEgressOnlyInternetGateways operation.
-type DescribeEgressOnlyInternetGatewaysAPIClient interface {
-	DescribeEgressOnlyInternetGateways(context.Context, *DescribeEgressOnlyInternetGatewaysInput, ...func(*Options)) (*DescribeEgressOnlyInternetGatewaysOutput, error)
-}
-
-var _ DescribeEgressOnlyInternetGatewaysAPIClient = (*Client)(nil)
 
 // DescribeEgressOnlyInternetGatewaysPaginatorOptions is the paginator options for
 // DescribeEgressOnlyInternetGateways
 type DescribeEgressOnlyInternetGatewaysPaginatorOptions struct {
 	// The maximum number of items to return for this request. To get the next page of
 	// items, make another request with the token returned in the output. For more
-	// information, see Pagination (https://docs.aws.amazon.com/AWSEC2/latest/APIReference/Query-Requests.html#api-pagination)
-	// .
+	// information, see [Pagination].
+	//
+	// [Pagination]: https://docs.aws.amazon.com/AWSEC2/latest/APIReference/Query-Requests.html#api-pagination
 	Limit int32
 
 	// Set to true if pagination should stop if the service returns a pagination token
@@ -228,6 +205,9 @@ func (p *DescribeEgressOnlyInternetGatewaysPaginator) NextPage(ctx context.Conte
 	}
 	params.MaxResults = limit
 
+	optFns = append([]func(*Options){
+		addIsPaginatorUserAgent,
+	}, optFns...)
 	result, err := p.client.DescribeEgressOnlyInternetGateways(ctx, &params, optFns...)
 	if err != nil {
 		return nil, err
@@ -247,10 +227,10 @@ func (p *DescribeEgressOnlyInternetGatewaysPaginator) NextPage(ctx context.Conte
 	return result, nil
 }
 
-func newServiceMetadataMiddleware_opDescribeEgressOnlyInternetGateways(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeEgressOnlyInternetGateways",
-	}
+// DescribeEgressOnlyInternetGatewaysAPIClient is a client that implements the
+// DescribeEgressOnlyInternetGateways operation.
+type DescribeEgressOnlyInternetGatewaysAPIClient interface {
+	DescribeEgressOnlyInternetGateways(context.Context, *DescribeEgressOnlyInternetGatewaysInput, ...func(*Options)) (*DescribeEgressOnlyInternetGatewaysOutput, error)
 }
+
+var _ DescribeEgressOnlyInternetGatewaysAPIClient = (*Client)(nil)

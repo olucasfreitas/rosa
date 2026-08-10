@@ -4,22 +4,28 @@ package ec2
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // Sets the AMI state to disabled and removes all launch permissions from the AMI.
-// A disabled AMI can't be used for instance launches. A disabled AMI can't be
-// shared. If an AMI was public or previously shared, it is made private. If an AMI
-// was shared with an Amazon Web Services account, organization, or Organizational
-// Unit, they lose access to the disabled AMI. A disabled AMI does not appear in
-// DescribeImages (https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeImages.html)
-// API calls by default. Only the AMI owner can disable an AMI. You can re-enable a
-// disabled AMI using EnableImage (http://amazonaws.com/AWSEC2/latest/APIReference/API_EnableImage.html)
-// . For more information, see Disable an AMI (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/disable-an-ami.html)
-// in the Amazon EC2 User Guide.
+// A disabled AMI can't be used for instance launches.
+//
+// A disabled AMI can't be shared. If an AMI was public or previously shared, it
+// is made private. If an AMI was shared with an Amazon Web Services account,
+// organization, or Organizational Unit, they lose access to the disabled AMI.
+//
+// A disabled AMI does not appear in [DescribeImages] API calls by default.
+//
+// Only the AMI owner can disable an AMI.
+//
+// You can re-enable a disabled AMI using [EnableImage].
+//
+// For more information, see [Disable an AMI] in the Amazon EC2 User Guide.
+//
+// [DescribeImages]: https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeImages.html
+// [Disable an AMI]: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/disable-an-ami.html
+// [EnableImage]: https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_EnableImage.html
 func (c *Client) DisableImage(ctx context.Context, params *DisableImageInput, optFns ...func(*Options)) (*DisableImageOutput, error) {
 	if params == nil {
 		params = &DisableImageInput{}
@@ -63,9 +69,6 @@ type DisableImageOutput struct {
 }
 
 func (c *Client) addOperationDisableImageMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpDisableImage{}, middleware.After)
 	if err != nil {
 		return err
@@ -74,17 +77,8 @@ func (c *Client) addOperationDisableImageMiddlewares(stack *middleware.Stack, op
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DisableImage"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -96,16 +90,7 @@ func (c *Client) addOperationDisableImageMiddlewares(stack *middleware.Stack, op
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -114,16 +99,13 @@ func (c *Client) addOperationDisableImageMiddlewares(stack *middleware.Stack, op
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpDisableImageValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDisableImage(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DisableImage"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -138,13 +120,8 @@ func (c *Client) addOperationDisableImageMiddlewares(stack *middleware.Stack, op
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opDisableImage(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DisableImage",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

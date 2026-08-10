@@ -4,8 +4,6 @@ package organizations
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -14,11 +12,18 @@ import (
 // Returns the contents of the effective policy for specified policy type and
 // account. The effective policy is the aggregation of any policies of the
 // specified type that the account inherits, plus any policy of that type that is
-// directly attached to the account. This operation applies only to policy types
-// other than service control policies (SCPs). For more information about policy
-// inheritance, see Understanding management policy inheritance (https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_inheritance_mgmt.html)
-// in the Organizations User Guide. This operation can be called from any account
-// in the organization.
+// directly attached to the account.
+//
+// This operation applies only to management policies. It does not apply to
+// authorization policies: service control policies (SCPs) and resource control
+// policies (RCPs).
+//
+// For more information about policy inheritance, see [Understanding management policy inheritance] in the Organizations User
+// Guide.
+//
+// You can call this operation from any account in a organization.
+//
+// [Understanding management policy inheritance]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_inheritance_mgmt.html
 func (c *Client) DescribeEffectivePolicy(ctx context.Context, params *DescribeEffectivePolicyInput, optFns ...func(*Options)) (*DescribeEffectivePolicyOutput, error) {
 	if params == nil {
 		params = &DescribeEffectivePolicyInput{}
@@ -38,9 +43,40 @@ type DescribeEffectivePolicyInput struct {
 
 	// The type of policy that you want information about. You can specify one of the
 	// following values:
-	//   - AISERVICES_OPT_OUT_POLICY (https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_ai-opt-out.html)
-	//   - BACKUP_POLICY (https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_backup.html)
-	//   - TAG_POLICY (https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_tag-policies.html)
+	//
+	// [DECLARATIVE_POLICY_EC2]
+	//
+	// [BACKUP_POLICY]
+	//
+	// [TAG_POLICY]
+	//
+	// [CHATBOT_POLICY]
+	//
+	// [AISERVICES_OPT_OUT_POLICY]
+	//
+	// [SECURITYHUB_POLICY]
+	//
+	// [UPGRADE_ROLLOUT_POLICY]
+	//
+	// [INSPECTOR_POLICY]
+	//
+	// [BEDROCK_POLICY]
+	//
+	// [S3_POLICY]
+	//
+	// [NETWORK_SECURITY_DIRECTOR_POLICY]
+	//
+	// [AISERVICES_OPT_OUT_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_ai-opt-out.html
+	// [BEDROCK_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_bedrock.html
+	// [NETWORK_SECURITY_DIRECTOR_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_network_security_director.html
+	// [UPGRADE_ROLLOUT_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_upgrade_rollout.html
+	// [SECURITYHUB_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_security_hub.html
+	// [BACKUP_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_backup.html
+	// [CHATBOT_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_chatbot.html
+	// [TAG_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_tag-policies.html
+	// [DECLARATIVE_POLICY_EC2]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_declarative.html
+	// [INSPECTOR_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_inspector.html
+	// [S3_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_s3.html
 	//
 	// This member is required.
 	PolicyType types.EffectivePolicyType
@@ -65,9 +101,6 @@ type DescribeEffectivePolicyOutput struct {
 }
 
 func (c *Client) addOperationDescribeEffectivePolicyMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpDescribeEffectivePolicy{}, middleware.After)
 	if err != nil {
 		return err
@@ -76,17 +109,8 @@ func (c *Client) addOperationDescribeEffectivePolicyMiddlewares(stack *middlewar
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeEffectivePolicy"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -98,16 +122,7 @@ func (c *Client) addOperationDescribeEffectivePolicyMiddlewares(stack *middlewar
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -116,16 +131,13 @@ func (c *Client) addOperationDescribeEffectivePolicyMiddlewares(stack *middlewar
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpDescribeEffectivePolicyValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeEffectivePolicy(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DescribeEffectivePolicy"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -140,13 +152,8 @@ func (c *Client) addOperationDescribeEffectivePolicyMiddlewares(stack *middlewar
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opDescribeEffectivePolicy(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeEffectivePolicy",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

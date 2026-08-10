@@ -4,20 +4,21 @@ package ec2
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Deletes the specified VPN connection. If you're deleting the VPC and its
-// associated components, we recommend that you detach the virtual private gateway
-// from the VPC and delete the VPC before deleting the VPN connection. If you
-// believe that the tunnel credentials for your VPN connection have been
-// compromised, you can delete the VPN connection and create a new one that has new
-// keys, without needing to delete the VPC or virtual private gateway. If you
-// create a new VPN connection, you must reconfigure the customer gateway device
-// using the new configuration information returned with the new VPN connection ID.
+// Deletes the specified VPN connection.
+//
+// If you're deleting the VPC and its associated components, we recommend that you
+// detach the virtual private gateway from the VPC and delete the VPC before
+// deleting the VPN connection. If you believe that the tunnel credentials for your
+// VPN connection have been compromised, you can delete the VPN connection and
+// create a new one that has new keys, without needing to delete the VPC or virtual
+// private gateway. If you create a new VPN connection, you must reconfigure the
+// customer gateway device using the new configuration information returned with
+// the new VPN connection ID.
+//
 // For certificate-based authentication, delete all Certificate Manager (ACM)
 // private certificates used for the Amazon Web Services-side tunnel endpoints for
 // the VPN connection before deleting the VPN connection.
@@ -61,9 +62,6 @@ type DeleteVpnConnectionOutput struct {
 }
 
 func (c *Client) addOperationDeleteVpnConnectionMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpDeleteVpnConnection{}, middleware.After)
 	if err != nil {
 		return err
@@ -72,17 +70,8 @@ func (c *Client) addOperationDeleteVpnConnectionMiddlewares(stack *middleware.St
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DeleteVpnConnection"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -94,16 +83,7 @@ func (c *Client) addOperationDeleteVpnConnectionMiddlewares(stack *middleware.St
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -112,16 +92,13 @@ func (c *Client) addOperationDeleteVpnConnectionMiddlewares(stack *middleware.St
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpDeleteVpnConnectionValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDeleteVpnConnection(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DeleteVpnConnection"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -136,13 +113,8 @@ func (c *Client) addOperationDeleteVpnConnectionMiddlewares(stack *middleware.St
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opDeleteVpnConnection(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DeleteVpnConnection",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

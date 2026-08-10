@@ -4,8 +4,6 @@ package ec2
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
@@ -14,9 +12,10 @@ import (
 // to turn off the VPC and not use it anymore. You can confirm a virtual private
 // gateway has been completely detached from a VPC by describing the virtual
 // private gateway (any attachments to the virtual private gateway are also
-// described). You must wait for the attachment's state to switch to detached
-// before you can delete the VPC or attach a different VPC to the virtual private
-// gateway.
+// described).
+//
+// You must wait for the attachment's state to switch to detached before you can
+// delete the VPC or attach a different VPC to the virtual private gateway.
 func (c *Client) DetachVpnGateway(ctx context.Context, params *DetachVpnGatewayInput, optFns ...func(*Options)) (*DetachVpnGatewayOutput, error) {
 	if params == nil {
 		params = &DetachVpnGatewayInput{}
@@ -62,9 +61,6 @@ type DetachVpnGatewayOutput struct {
 }
 
 func (c *Client) addOperationDetachVpnGatewayMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpDetachVpnGateway{}, middleware.After)
 	if err != nil {
 		return err
@@ -73,17 +69,8 @@ func (c *Client) addOperationDetachVpnGatewayMiddlewares(stack *middleware.Stack
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DetachVpnGateway"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -95,16 +82,7 @@ func (c *Client) addOperationDetachVpnGatewayMiddlewares(stack *middleware.Stack
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -113,16 +91,13 @@ func (c *Client) addOperationDetachVpnGatewayMiddlewares(stack *middleware.Stack
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpDetachVpnGatewayValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDetachVpnGateway(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DetachVpnGateway"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -137,13 +112,8 @@ func (c *Client) addOperationDetachVpnGatewayMiddlewares(stack *middleware.Stack
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opDetachVpnGateway(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DetachVpnGateway",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

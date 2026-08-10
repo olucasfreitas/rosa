@@ -4,8 +4,6 @@ package ec2
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -13,9 +11,10 @@ import (
 
 // Creates a Connect attachment from a specified transit gateway attachment. A
 // Connect attachment is a GRE-based tunnel attachment that you can use to
-// establish a connection between a transit gateway and an appliance. A Connect
-// attachment uses an existing VPC or Amazon Web Services Direct Connect attachment
-// as the underlying transport mechanism.
+// establish a connection between a transit gateway and an appliance.
+//
+// A Connect attachment uses an existing VPC or Amazon Web Services Direct Connect
+// attachment as the underlying transport mechanism.
 func (c *Client) CreateTransitGatewayConnect(ctx context.Context, params *CreateTransitGatewayConnectInput, optFns ...func(*Options)) (*CreateTransitGatewayConnectOutput, error) {
 	if params == nil {
 		params = &CreateTransitGatewayConnectInput{}
@@ -68,9 +67,6 @@ type CreateTransitGatewayConnectOutput struct {
 }
 
 func (c *Client) addOperationCreateTransitGatewayConnectMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpCreateTransitGatewayConnect{}, middleware.After)
 	if err != nil {
 		return err
@@ -79,17 +75,8 @@ func (c *Client) addOperationCreateTransitGatewayConnectMiddlewares(stack *middl
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "CreateTransitGatewayConnect"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -101,16 +88,7 @@ func (c *Client) addOperationCreateTransitGatewayConnectMiddlewares(stack *middl
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -119,16 +97,13 @@ func (c *Client) addOperationCreateTransitGatewayConnectMiddlewares(stack *middl
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpCreateTransitGatewayConnectValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opCreateTransitGatewayConnect(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "CreateTransitGatewayConnect"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -143,13 +118,8 @@ func (c *Client) addOperationCreateTransitGatewayConnectMiddlewares(stack *middl
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opCreateTransitGatewayConnect(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "CreateTransitGatewayConnect",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

@@ -4,14 +4,27 @@ package cloudwatchlogs
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // Returns a list of all CloudWatch Logs account policies in the account.
+//
+// To use this operation, you must be signed on with the correct permissions
+// depending on the type of policy that you are retrieving information for.
+//
+//   - To see data protection policies, you must have the
+//     logs:GetDataProtectionPolicy and logs:DescribeAccountPolicies permissions.
+//
+//   - To see subscription filter policies, you must have the
+//     logs:DescribeSubscriptionFilters and logs:DescribeAccountPolicies permissions.
+//
+//   - To see transformer policies, you must have the logs:GetTransformer and
+//     logs:DescribeAccountPolicies permissions.
+//
+//   - To see field index policies, you must have the logs:DescribeIndexPolicies
+//     and logs:DescribeAccountPolicies permissions.
 func (c *Client) DescribeAccountPolicies(ctx context.Context, params *DescribeAccountPoliciesInput, optFns ...func(*Options)) (*DescribeAccountPoliciesOutput, error) {
 	if params == nil {
 		params = &DescribeAccountPoliciesInput{}
@@ -39,9 +52,14 @@ type DescribeAccountPoliciesInput struct {
 	// CloudWatch unified cross-account observability, you can use this to specify the
 	// account ID of a source account. If you do, the operation returns the account
 	// policy for the specified account. Currently, you can specify only one account ID
-	// in this parameter. If you omit this parameter, only the policy in the current
-	// account is returned.
+	// in this parameter.
+	//
+	// If you omit this parameter, only the policy in the current account is returned.
 	AccountIdentifiers []string
+
+	// The token for the next set of items to return. (You received this token from a
+	// previous call.)
+	NextToken *string
 
 	// Use this parameter to limit the returned policies to only the policy with the
 	// name that you specify.
@@ -56,6 +74,10 @@ type DescribeAccountPoliciesOutput struct {
 	// account policies that match the specified filters.
 	AccountPolicies []types.AccountPolicy
 
+	// The token to use when requesting the next set of items. The token expires after
+	// 24 hours.
+	NextToken *string
+
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
 
@@ -63,9 +85,6 @@ type DescribeAccountPoliciesOutput struct {
 }
 
 func (c *Client) addOperationDescribeAccountPoliciesMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpDescribeAccountPolicies{}, middleware.After)
 	if err != nil {
 		return err
@@ -74,17 +93,8 @@ func (c *Client) addOperationDescribeAccountPoliciesMiddlewares(stack *middlewar
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeAccountPolicies"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -96,16 +106,7 @@ func (c *Client) addOperationDescribeAccountPoliciesMiddlewares(stack *middlewar
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -114,16 +115,13 @@ func (c *Client) addOperationDescribeAccountPoliciesMiddlewares(stack *middlewar
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpDescribeAccountPoliciesValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeAccountPolicies(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DescribeAccountPolicies"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -138,13 +136,8 @@ func (c *Client) addOperationDescribeAccountPoliciesMiddlewares(stack *middlewar
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opDescribeAccountPolicies(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeAccountPolicies",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

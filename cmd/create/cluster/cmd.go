@@ -101,8 +101,9 @@ const (
 
 	billingAccountFlag = "billing-account"
 
-	privateLinkFlagName = "private-link"
-	privateFlagName     = "private"
+	privateLinkFlagName            = "private-link"
+	privateFlagName                = "private"
+	enableDeleteProtectionFlagName = "enable-delete-protection"
 )
 
 var args struct {
@@ -136,6 +137,7 @@ var args struct {
 	channel                   string
 	flavour                   string
 	disableWorkloadMonitoring bool
+	enableDeleteProtection    bool
 	ec2MetadataHttpTokens     string
 
 	//Encryption
@@ -719,6 +721,12 @@ func initFlags(cmd *cobra.Command) {
 			"Reliability Engineer (SRE) platform metrics. "+
 			"Not supported for Hosted Control Plane clusters.",
 	)
+	flags.BoolVar(
+		&args.enableDeleteProtection,
+		enableDeleteProtectionFlagName,
+		false,
+		"Enable cluster delete protection against accidental deletion after the cluster is created.",
+	)
 
 	flags.BoolVarP(
 		&args.watch,
@@ -814,7 +822,8 @@ func initFlags(cmd *cobra.Command) {
 		"",
 		`The password must
 		- Be at least 14 characters (ASCII-standard) without whitespaces
-		- Include uppercase letters, lowercase letters, and numbers or symbols (ASCII-standard characters only)`,
+		- Include uppercase letters, lowercase letters, and numbers or symbols (ASCII-standard characters only)
+		For security reasons, password will not be displayed`,
 	)
 	flags.MarkHidden("cluster-admin-user")
 
@@ -1163,7 +1172,7 @@ func run(cmd *cobra.Command, _ []string) {
 		isClusterAdmin = true
 		// user supplies create-admin-user flag without cluster-admin-password will generate random password
 		if clusterAdminPassword == "" {
-			r.Reporter.Debugf(admin.GeneratingRandomPasswordString)
+			r.Reporter.Debugf(admin.AdminCredentialGenerationMessage)
 			clusterAdminPassword, err = idputils.GenerateRandomPassword()
 			if err != nil {
 				r.Reporter.Errorf("Failed to generate a random password")
@@ -1223,7 +1232,9 @@ func run(cmd *cobra.Command, _ []string) {
 			}
 		}
 	}
-	outputClusterAdminDetails(r, isClusterAdmin, clusterAdminUser, clusterAdminPassword)
+
+	outputClusterAdminDetails(r, isClusterAdmin, clusterAdminUser, clusterAdminPassword,
+		strings.Trim(args.clusterAdminPassword, " \t") != "")
 
 	if isHostedCP && cmd.Flags().Changed(arguments.NewDefaultMPLabelsFlag) {
 		r.Reporter.Errorf("Setting the worker machine pool labels is not supported for hosted clusters")
@@ -1700,17 +1711,9 @@ func run(cmd *cobra.Command, _ []string) {
 	}
 
 	externalID := args.externalID
-	if isSTS && interactive.Enabled() {
-		externalID, err = interactive.GetString(interactive.Input{
-			Question: "External ID",
-			Help:     cmd.Flags().Lookup("external-id").Usage,
-			Validators: []interactive.Validator{
-				interactive.RegExp(`^[\w+=,.@:\/-]*$`),
-				interactive.MaxLength(1224),
-			},
-		})
-		if err != nil {
-			r.Reporter.Errorf("Expected a valid External ID: %s", err)
+	if isSTS && externalIDFlagChanged(cmd) {
+		if err := validateChangedSTSExternalIDFlag(externalID); err != nil {
+			r.Reporter.Errorf("Expected a valid STS external ID: %s", err)
 			os.Exit(1)
 		}
 	}
@@ -1743,6 +1746,48 @@ func run(cmd *cobra.Command, _ []string) {
 	} else if roleARN != "" {
 		r.Reporter.Errorf("Support Role ARN is required: %s", err)
 		os.Exit(1)
+	}
+
+	if isSTS && roleARN != "" && supportRoleARN != "" {
+		externalIDResolution, err := resolveSTSExternalIDForClusterCreate(awsClient, externalID, roleARN, supportRoleARN)
+		if err != nil {
+			r.Reporter.Errorf("%s", err)
+			os.Exit(1)
+		}
+		externalID = externalIDResolution.ExternalID
+		if err := checkSTSExternalIDResolution(externalIDResolution, externalIDFlagChanged(cmd)); err != nil {
+			r.Reporter.Errorf("The installer and support role trust policies define STS external IDs with no " +
+				"value in common. Align the role trust policies or pass --external-id with a value present in " +
+				"both roles before creating the cluster.")
+			os.Exit(1)
+		}
+		if shouldWarnAmbiguousSTSExternalID(externalIDResolution, externalIDFlagChanged(cmd)) {
+			r.Reporter.Warnf("Could not determine a single STS external ID from the installer and support role " +
+				"trust policies. The cluster will be created without an external ID unless you provide one " +
+				"with --external-id.")
+			if interactive.Enabled() {
+				externalID, err = interactive.GetString(interactive.Input{
+					Question: "STS external ID",
+					Help:     cmd.Flags().Lookup("external-id").Usage,
+					Default:  externalID,
+					Validators: []interactive.Validator{
+						interactive.RegExp(`^[\w+=,.@:\/-]*$`),
+						interactive.MaxLength(1224),
+					},
+				})
+				if err != nil {
+					r.Reporter.Errorf("Expected a valid STS external ID: %s", err)
+					os.Exit(1)
+				}
+				if externalID != "" {
+					externalID, err = resolveEnteredSTSExternalIDForCluster(awsClient, externalID, roleARN, supportRoleARN)
+					if err != nil {
+						r.Reporter.Errorf("Failed to resolve STS external ID: %s", err)
+						os.Exit(1)
+					}
+				}
+			}
+		}
 	}
 
 	// Instance IAM Roles
@@ -3067,6 +3112,20 @@ func run(cmd *cobra.Command, _ []string) {
 		}
 	}
 
+	enableDeleteProtection := args.enableDeleteProtection
+	if interactive.Enabled() {
+		enableDeleteProtection, err = interactive.GetBool(interactive.Input{
+			Question: "Enable cluster delete protection",
+			Help:     cmd.Flags().Lookup(enableDeleteProtectionFlagName).Usage,
+			Default:  enableDeleteProtection,
+		})
+		if err != nil {
+			r.Reporter.Errorf("Expected a valid enable-delete-protection value: %v", err)
+			os.Exit(1)
+		}
+		args.enableDeleteProtection = enableDeleteProtection
+	}
+
 	// Cluster-wide proxy configuration
 	if (subnetsProvided || (useExistingVPC && !enableProxy)) && interactive.Enabled() {
 		enableProxy, err = interactive.GetBool(interactive.Input{
@@ -3627,6 +3686,22 @@ func run(cmd *cobra.Command, _ []string) {
 		os.Exit(0)
 	}
 
+	if enableDeleteProtection {
+		deleteProtection, err := v1.NewDeleteProtection().Enabled(true).Build()
+		if err != nil {
+			r.Reporter.Errorf("Failed to build delete protection request: %v", err)
+			os.Exit(1)
+		}
+		if err := r.OCMClient.UpdateClusterDeleteProtection(cluster.ID(), deleteProtection); err != nil {
+			r.Reporter.Errorf(
+				"Cluster '%s' was created but delete protection could not be enabled: %v",
+				cluster.ID(),
+				err,
+			)
+			os.Exit(1)
+		}
+	}
+
 	if !output.HasFlag() || r.Reporter.IsTerminal() {
 		r.Reporter.Infof("Cluster '%s' has been created.", clusterName)
 		r.Reporter.Infof(
@@ -4066,6 +4141,7 @@ func parseRFC3339(s string) (time.Time, error) {
 }
 
 const hostedCPFlag = "--hosted-cp"
+const clusterAdminPasswordPlaceholder = "<redacted>"
 
 func buildCommand(spec ocm.Spec, operatorRolesPrefix string,
 	operatorRolePath string, userSelectedAvailabilityZones bool, labels string,
@@ -4089,7 +4165,7 @@ func buildCommand(spec ocm.Spec, operatorRolesPrefix string,
 		argAdded := false
 		// Checks if admin password is from user (both flag and interactive)
 		if args.clusterAdminPassword != "" && spec.ClusterAdminPassword != "" {
-			command += fmt.Sprintf(" --cluster-admin-password %s", spec.ClusterAdminPassword)
+			command += fmt.Sprintf(" --cluster-admin-password %q", clusterAdminPasswordPlaceholder)
 			argAdded = true
 		}
 		if spec.ClusterAdminUser != admin.ClusterAdminUsername {
@@ -4242,6 +4318,9 @@ func buildCommand(spec ocm.Spec, operatorRolesPrefix string,
 	}
 	if spec.DisableWorkloadMonitoring != nil && *spec.DisableWorkloadMonitoring {
 		command += " --disable-workload-monitoring"
+	}
+	if args.enableDeleteProtection {
+		command += " --enable-delete-protection"
 	}
 	if userSelectedAvailabilityZones {
 		command += fmt.Sprintf(" --availability-zones %s", strings.Join(spec.AvailabilityZones, ","))
@@ -4432,10 +4511,14 @@ func getInitialValidSubnets(awsClient aws.Client, ids []string, r reporter.Logge
 	return initialValidSubnets, nil
 }
 
-func outputClusterAdminDetails(r *rosa.Runtime, isClusterAdmin bool, createAdminUser, createAdminPassword string) {
+func outputClusterAdminDetails(r *rosa.Runtime, isClusterAdmin bool, createAdminUser, createAdminPassword string,
+	customAdminPassword bool) {
 	if isClusterAdmin {
 		r.Reporter.Infof("cluster admin user is %s", createAdminUser)
-		r.Reporter.Infof("cluster admin password is %s", createAdminPassword)
+		if !customAdminPassword {
+			// If the admin password was generated, it needs to be displayed so the user can save it
+			r.Reporter.Infof("cluster admin password is %s", createAdminPassword)
+		}
 	}
 }
 

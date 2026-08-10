@@ -4,14 +4,14 @@ package ec2
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// This action is deprecated. Disables ClassicLink for a VPC. You cannot disable
-// ClassicLink for a VPC that has EC2-Classic instances linked to it.
+// This action is deprecated.
+//
+// Disables ClassicLink for a VPC. You cannot disable ClassicLink for a VPC that
+// has EC2-Classic instances linked to it.
 func (c *Client) DisableVpcClassicLink(ctx context.Context, params *DisableVpcClassicLinkInput, optFns ...func(*Options)) (*DisableVpcClassicLinkOutput, error) {
 	if params == nil {
 		params = &DisableVpcClassicLinkInput{}
@@ -55,9 +55,6 @@ type DisableVpcClassicLinkOutput struct {
 }
 
 func (c *Client) addOperationDisableVpcClassicLinkMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpDisableVpcClassicLink{}, middleware.After)
 	if err != nil {
 		return err
@@ -66,17 +63,8 @@ func (c *Client) addOperationDisableVpcClassicLinkMiddlewares(stack *middleware.
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DisableVpcClassicLink"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -88,16 +76,7 @@ func (c *Client) addOperationDisableVpcClassicLinkMiddlewares(stack *middleware.
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -106,16 +85,13 @@ func (c *Client) addOperationDisableVpcClassicLinkMiddlewares(stack *middleware.
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpDisableVpcClassicLinkValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDisableVpcClassicLink(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DisableVpcClassicLink"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -130,13 +106,8 @@ func (c *Client) addOperationDisableVpcClassicLinkMiddlewares(stack *middleware.
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opDisableVpcClassicLink(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DisableVpcClassicLink",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

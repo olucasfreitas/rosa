@@ -5,7 +5,6 @@ package cloudformation
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -48,7 +47,8 @@ type ListResourceScanRelatedResourcesInput struct {
 	// return up to 100 results in each response. The maximum value is 100.
 	MaxResults *int32
 
-	// A string that identifies the next page of resource scan results.
+	// The token for the next set of items to return. (You received this token from a
+	// previous call.)
 	NextToken *string
 
 	noSmithyDocumentSerde
@@ -74,9 +74,6 @@ type ListResourceScanRelatedResourcesOutput struct {
 }
 
 func (c *Client) addOperationListResourceScanRelatedResourcesMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsAwsquery_serializeOpListResourceScanRelatedResources{}, middleware.After)
 	if err != nil {
 		return err
@@ -85,17 +82,8 @@ func (c *Client) addOperationListResourceScanRelatedResourcesMiddlewares(stack *
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "ListResourceScanRelatedResources"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -107,16 +95,7 @@ func (c *Client) addOperationListResourceScanRelatedResourcesMiddlewares(stack *
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -125,16 +104,13 @@ func (c *Client) addOperationListResourceScanRelatedResourcesMiddlewares(stack *
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpListResourceScanRelatedResourcesValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opListResourceScanRelatedResources(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "ListResourceScanRelatedResources"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -149,16 +125,11 @@ func (c *Client) addOperationListResourceScanRelatedResourcesMiddlewares(stack *
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
+	if err = addInterceptors(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
-
-// ListResourceScanRelatedResourcesAPIClient is a client that implements the
-// ListResourceScanRelatedResources operation.
-type ListResourceScanRelatedResourcesAPIClient interface {
-	ListResourceScanRelatedResources(context.Context, *ListResourceScanRelatedResourcesInput, ...func(*Options)) (*ListResourceScanRelatedResourcesOutput, error)
-}
-
-var _ ListResourceScanRelatedResourcesAPIClient = (*Client)(nil)
 
 // ListResourceScanRelatedResourcesPaginatorOptions is the paginator options for
 // ListResourceScanRelatedResources
@@ -229,6 +200,9 @@ func (p *ListResourceScanRelatedResourcesPaginator) NextPage(ctx context.Context
 	}
 	params.MaxResults = limit
 
+	optFns = append([]func(*Options){
+		addIsPaginatorUserAgent,
+	}, optFns...)
 	result, err := p.client.ListResourceScanRelatedResources(ctx, &params, optFns...)
 	if err != nil {
 		return nil, err
@@ -248,10 +222,10 @@ func (p *ListResourceScanRelatedResourcesPaginator) NextPage(ctx context.Context
 	return result, nil
 }
 
-func newServiceMetadataMiddleware_opListResourceScanRelatedResources(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "ListResourceScanRelatedResources",
-	}
+// ListResourceScanRelatedResourcesAPIClient is a client that implements the
+// ListResourceScanRelatedResources operation.
+type ListResourceScanRelatedResourcesAPIClient interface {
+	ListResourceScanRelatedResources(context.Context, *ListResourceScanRelatedResourcesInput, ...func(*Options)) (*ListResourceScanRelatedResourcesOutput, error)
 }
+
+var _ ListResourceScanRelatedResourcesAPIClient = (*Client)(nil)

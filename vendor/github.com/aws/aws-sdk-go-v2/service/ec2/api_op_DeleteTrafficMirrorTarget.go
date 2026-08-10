@@ -4,14 +4,14 @@ package ec2
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Deletes the specified Traffic Mirror target. You cannot delete a Traffic Mirror
-// target that is in use by a Traffic Mirror session.
+// Deletes the specified Traffic Mirror target.
+//
+// You cannot delete a Traffic Mirror target that is in use by a Traffic Mirror
+// session.
 func (c *Client) DeleteTrafficMirrorTarget(ctx context.Context, params *DeleteTrafficMirrorTargetInput, optFns ...func(*Options)) (*DeleteTrafficMirrorTargetOutput, error) {
 	if params == nil {
 		params = &DeleteTrafficMirrorTargetInput{}
@@ -55,9 +55,6 @@ type DeleteTrafficMirrorTargetOutput struct {
 }
 
 func (c *Client) addOperationDeleteTrafficMirrorTargetMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpDeleteTrafficMirrorTarget{}, middleware.After)
 	if err != nil {
 		return err
@@ -66,17 +63,8 @@ func (c *Client) addOperationDeleteTrafficMirrorTargetMiddlewares(stack *middlew
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DeleteTrafficMirrorTarget"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -88,16 +76,7 @@ func (c *Client) addOperationDeleteTrafficMirrorTargetMiddlewares(stack *middlew
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -106,16 +85,13 @@ func (c *Client) addOperationDeleteTrafficMirrorTargetMiddlewares(stack *middlew
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpDeleteTrafficMirrorTargetValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDeleteTrafficMirrorTarget(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DeleteTrafficMirrorTarget"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -130,13 +106,8 @@ func (c *Client) addOperationDeleteTrafficMirrorTargetMiddlewares(stack *middlew
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opDeleteTrafficMirrorTarget(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DeleteTrafficMirrorTarget",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

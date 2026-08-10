@@ -52,7 +52,7 @@ var Cmd = &cobra.Command{
 	Use:     "operator-roles",
 	Aliases: []string{"operatorrole", "operatorroles"},
 	Short:   "Delete Operator Roles",
-	Long:    "Cleans up operator roles of deleted STS cluster.",
+	Long:    "Cleans up Operator roles of deleted AWS Security Token Service (STS) cluster.",
 	Example: `  # Delete Operator roles for cluster named "mycluster"
   rosa delete operator-roles --cluster=mycluster`,
 	Run:  run,
@@ -377,9 +377,10 @@ func buildCommand(r *rosa.Runtime, roleNames []string, policyMap map[string][]st
 			hasRhManagedTag := false
 			hasHcpSharedVpcTag := false
 			for _, tag := range hcpSharedVpcPolicy.Policy.Tags {
-				if *tag.Key == tags.RedHatManaged {
+				switch *tag.Key {
+				case tags.RedHatManaged:
 					hasRhManagedTag = true
-				} else if *tag.Key == tags.HcpSharedVpc {
+				case tags.HcpSharedVpc:
 					hasHcpSharedVpcTag = true
 				}
 			}

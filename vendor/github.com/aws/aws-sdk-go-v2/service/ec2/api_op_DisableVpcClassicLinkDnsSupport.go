@@ -4,16 +4,17 @@ package ec2
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// This action is deprecated. Disables ClassicLink DNS support for a VPC. If
-// disabled, DNS hostnames resolve to public IP addresses when addressed between a
-// linked EC2-Classic instance and instances in the VPC to which it's linked. You
-// must specify a VPC ID in the request.
+// This action is deprecated.
+//
+// Disables ClassicLink DNS support for a VPC. If disabled, DNS hostnames resolve
+// to public IP addresses when addressed between a linked EC2-Classic instance and
+// instances in the VPC to which it's linked.
+//
+// You must specify a VPC ID in the request.
 func (c *Client) DisableVpcClassicLinkDnsSupport(ctx context.Context, params *DisableVpcClassicLinkDnsSupportInput, optFns ...func(*Options)) (*DisableVpcClassicLinkDnsSupportOutput, error) {
 	if params == nil {
 		params = &DisableVpcClassicLinkDnsSupportInput{}
@@ -49,9 +50,6 @@ type DisableVpcClassicLinkDnsSupportOutput struct {
 }
 
 func (c *Client) addOperationDisableVpcClassicLinkDnsSupportMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpDisableVpcClassicLinkDnsSupport{}, middleware.After)
 	if err != nil {
 		return err
@@ -60,17 +58,8 @@ func (c *Client) addOperationDisableVpcClassicLinkDnsSupportMiddlewares(stack *m
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DisableVpcClassicLinkDnsSupport"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -82,16 +71,7 @@ func (c *Client) addOperationDisableVpcClassicLinkDnsSupportMiddlewares(stack *m
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -100,13 +80,10 @@ func (c *Client) addOperationDisableVpcClassicLinkDnsSupportMiddlewares(stack *m
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDisableVpcClassicLinkDnsSupport(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DisableVpcClassicLinkDnsSupport"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -121,13 +98,8 @@ func (c *Client) addOperationDisableVpcClassicLinkDnsSupportMiddlewares(stack *m
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opDisableVpcClassicLinkDnsSupport(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DisableVpcClassicLinkDnsSupport",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

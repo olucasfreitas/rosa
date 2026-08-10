@@ -5,7 +5,6 @@ package ec2
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -43,8 +42,10 @@ type DescribeNetworkInsightsAnalysesInput struct {
 	DryRun *bool
 
 	// The filters. The following are the possible values:
+	//
 	//   - path-found - A Boolean value that indicates whether a feasible path is
 	//   found.
+	//
 	//   - status - The status of the analysis (running | succeeded | failed).
 	Filters []types.Filter
 
@@ -81,9 +82,6 @@ type DescribeNetworkInsightsAnalysesOutput struct {
 }
 
 func (c *Client) addOperationDescribeNetworkInsightsAnalysesMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpDescribeNetworkInsightsAnalyses{}, middleware.After)
 	if err != nil {
 		return err
@@ -92,17 +90,8 @@ func (c *Client) addOperationDescribeNetworkInsightsAnalysesMiddlewares(stack *m
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeNetworkInsightsAnalyses"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -114,16 +103,7 @@ func (c *Client) addOperationDescribeNetworkInsightsAnalysesMiddlewares(stack *m
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -132,13 +112,10 @@ func (c *Client) addOperationDescribeNetworkInsightsAnalysesMiddlewares(stack *m
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeNetworkInsightsAnalyses(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DescribeNetworkInsightsAnalyses"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -153,16 +130,11 @@ func (c *Client) addOperationDescribeNetworkInsightsAnalysesMiddlewares(stack *m
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
+	if err = addInterceptors(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
-
-// DescribeNetworkInsightsAnalysesAPIClient is a client that implements the
-// DescribeNetworkInsightsAnalyses operation.
-type DescribeNetworkInsightsAnalysesAPIClient interface {
-	DescribeNetworkInsightsAnalyses(context.Context, *DescribeNetworkInsightsAnalysesInput, ...func(*Options)) (*DescribeNetworkInsightsAnalysesOutput, error)
-}
-
-var _ DescribeNetworkInsightsAnalysesAPIClient = (*Client)(nil)
 
 // DescribeNetworkInsightsAnalysesPaginatorOptions is the paginator options for
 // DescribeNetworkInsightsAnalyses
@@ -231,6 +203,9 @@ func (p *DescribeNetworkInsightsAnalysesPaginator) NextPage(ctx context.Context,
 	}
 	params.MaxResults = limit
 
+	optFns = append([]func(*Options){
+		addIsPaginatorUserAgent,
+	}, optFns...)
 	result, err := p.client.DescribeNetworkInsightsAnalyses(ctx, &params, optFns...)
 	if err != nil {
 		return nil, err
@@ -250,10 +225,10 @@ func (p *DescribeNetworkInsightsAnalysesPaginator) NextPage(ctx context.Context,
 	return result, nil
 }
 
-func newServiceMetadataMiddleware_opDescribeNetworkInsightsAnalyses(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeNetworkInsightsAnalyses",
-	}
+// DescribeNetworkInsightsAnalysesAPIClient is a client that implements the
+// DescribeNetworkInsightsAnalyses operation.
+type DescribeNetworkInsightsAnalysesAPIClient interface {
+	DescribeNetworkInsightsAnalyses(context.Context, *DescribeNetworkInsightsAnalysesInput, ...func(*Options)) (*DescribeNetworkInsightsAnalysesOutput, error)
 }
+
+var _ DescribeNetworkInsightsAnalysesAPIClient = (*Client)(nil)

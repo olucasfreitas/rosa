@@ -3,6 +3,7 @@ package rosacli
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/openshift/rosa/tests/utils/config"
 	"github.com/openshift/rosa/tests/utils/constants"
+	"github.com/openshift/rosa/tests/utils/helper"
 	"github.com/openshift/rosa/tests/utils/log"
 )
 
@@ -38,6 +40,7 @@ type ClusterService interface {
 	GetClusterVersion(clusterID string) (config.Version, error)
 	IsBYOVPCCluster(clusterID string) (bool, error)
 	IsExternalAuthenticationEnabled(clusterID string) (bool, error)
+	IsLimitedSupport(clusterID string) (bool, error)
 	DetectProxy(clusterDescription *ClusterDescription) (string, string, string)
 	GetJSONClusterDescription(clusterID string) (*jsonData, error)
 	HibernateCluster(clusterID string, flags ...string) (bytes.Buffer, error)
@@ -48,10 +51,21 @@ type ClusterService interface {
 	WaitForClusterPassUninstalled(clusterID string, interval int, timeoutMin int) error
 	WaitForClusterPassWaiting(clusterID string, interval int, timeoutMin int) error
 	GetClusterName(clusterID string) (clusterName string, err error)
+	// PrepareClusterForYStreamUpgrade ensures the cluster points at the next-minor
+	// channel and returns the version/channel context needed for y-stream tests.
+	PrepareClusterForYStreamUpgrade(clusterID string, channelGroup string) (*YStreamUpgradePreparation, error)
 }
 
 type clusterService struct {
 	ResourcesService
+}
+
+// YStreamUpgradePreparation captures the cluster version and channel state used
+// to prepare and diagnose y-stream upgrade discovery in tests.
+type YStreamUpgradePreparation struct {
+	ClusterVersion string
+	CurrentChannel string
+	DesiredChannel string
 }
 
 func NewClusterService(client *Client) ClusterService {
@@ -71,6 +85,22 @@ type ClusterListItem struct {
 }
 type ClusterList struct {
 	Clusters []ClusterListItem `yaml:"Clusters,omitempty"`
+}
+
+type AutoNodeDescription struct {
+	Mode string `yaml:"Mode,omitempty"`
+	ARN  string `yaml:"IAM Role ARN,omitempty"`
+}
+
+func (an *AutoNodeDescription) UnmarshalYAML(value *yaml.Node) error {
+	if value.Kind == yaml.ScalarNode {
+		return value.Decode(&an.Mode)
+	}
+	if value.Kind == yaml.MappingNode {
+		type plain AutoNodeDescription
+		return value.Decode((*plain)(an))
+	}
+	return fmt.Errorf("unexpected YAML node kind %d for AutoNode", value.Kind)
 }
 
 // Struct for the 'rosa describe cluster' output
@@ -123,7 +153,7 @@ type ClusterDescription struct {
 	EnableEtcdEncryption     string                   `yaml:"Etcd Encryption,omitempty"`
 	EtcdKmsKeyARN            string                   `yaml:"Etcd KMS key ARN,omitempty"`
 	RegistryConfiguration    []map[string]interface{} `yaml:"Registry Configuration,omitempty"`
-	AutoNode                 string                   `yaml:"AutoNode,omitempty"`
+	AutoNode                 AutoNodeDescription      `yaml:"AutoNode,omitempty"`
 	ZeroEgress               string                   `yaml:"Zero Egress,omitempty"`
 	SharedVPCConfig          []map[string]string      `yaml:"Shared VPC Config,omitempty"`
 }
@@ -206,7 +236,7 @@ func (c *clusterService) ReflectClusterDescription(result bytes.Buffer) (res *Cl
 			newStr = strings.Replace(str, "Failed Inflight Checks:", "Failed Inflight Checks: |", 1)
 			newStr = strings.ReplaceAll(newStr, "\t", "  ")
 			newStr = strings.ReplaceAll(newStr, "not found: Role name", "not found:Role name")
-			//Until https://issues.redhat.com/browse/OCM-11830 fixed
+			// Until https://issues.redhat.com/browse/OCM-11830 fixed
 			newStr = strings.Replace(newStr, "Platform Allowlist:", "Platform Allowlist: \n    - ID:", 1)
 			newStr = strings.Replace(newStr, "[DEPRECATED] User Workload Monitoring:", "User Workload Monitoring:", 1)
 			return
@@ -229,7 +259,7 @@ func (c *clusterService) List() (bytes.Buffer, error) {
 }
 
 func (c *clusterService) CreateDryRun(clusterName string, flags ...string) (bytes.Buffer, error) {
-	combflags := append([]string{"-c", clusterName, "--dry-run"}, flags...)
+	combflags := append([]string{"-c", clusterName, "--dry-run", "--mode=auto", "--yes"}, flags...)
 	createDryRun := c.client.Runner.
 		Cmd("create", "cluster").
 		CmdFlags(combflags...)
@@ -267,6 +297,7 @@ func (c *clusterService) InstallLog(clusterID string, flags ...string) (bytes.Bu
 		CmdFlags(flags...)
 	return installLog.Run()
 }
+
 func (c *clusterService) UnInstallLog(clusterID string, flags ...string) (bytes.Buffer, error) {
 	UnInstallLog := c.client.Runner.
 		Cmd("logs", "uninstall", "-c", clusterID).
@@ -355,14 +386,105 @@ func (c *clusterService) GetClusterName(clusterID string) (clusterName string, e
 	return clusterConfig.Name, err
 }
 
+func computeNextMinorChannel(channelGroup string, clusterVersion string) (string, error) {
+	group := strings.TrimSpace(channelGroup)
+	if group == "" {
+		return "", fmt.Errorf("channel group is required to compute the next-minor channel")
+	}
+
+	major, minor, _, err := helper.ParseVersion(clusterVersion)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse cluster version %q: %w", clusterVersion, err)
+	}
+
+	return fmt.Sprintf("%s-%d.%d", group, major, minor+1), nil
+}
+
+func prepareYStreamUpgradeChannel(
+	clusterID string,
+	currentChannel string,
+	clusterVersion string,
+	channelGroup string,
+	editCluster func(clusterID string, flags ...string) (bytes.Buffer, error),
+) (*YStreamUpgradePreparation, error) {
+	preparation := &YStreamUpgradePreparation{
+		ClusterVersion: clusterVersion,
+		CurrentChannel: strings.TrimSpace(currentChannel),
+	}
+
+	desiredChannel, err := computeNextMinorChannel(channelGroup, clusterVersion)
+	if err != nil {
+		return nil, err
+	}
+	preparation.DesiredChannel = desiredChannel
+
+	if preparation.CurrentChannel == desiredChannel {
+		return preparation, nil
+	}
+	if editCluster == nil {
+		return nil, fmt.Errorf("edit cluster function is required to set desired channel %q", desiredChannel)
+	}
+
+	if _, err := editCluster(clusterID, "--channel", desiredChannel, "-y"); err != nil {
+		return nil, fmt.Errorf(
+			"failed to update cluster %s channel from %q to %q: %w",
+			clusterID,
+			preparation.CurrentChannel,
+			desiredChannel,
+			err,
+		)
+	}
+
+	preparation.CurrentChannel = desiredChannel
+	return preparation, nil
+}
+
+func (c *clusterService) PrepareClusterForYStreamUpgrade(
+	clusterID string,
+	channelGroup string,
+) (*YStreamUpgradePreparation, error) {
+	jsonData, err := c.GetJSONClusterDescription(clusterID)
+	if err != nil {
+		return nil, err
+	}
+
+	clusterVersion := strings.TrimSpace(jsonData.DigString("version", "raw_id"))
+	if clusterVersion == "" {
+		return nil, fmt.Errorf("cluster %s returned an empty raw version while preparing y-stream upgrade", clusterID)
+	}
+
+	if strings.TrimSpace(channelGroup) == "" {
+		channelGroup = jsonData.DigString("version", "channel_group")
+		if strings.TrimSpace(channelGroup) == "" {
+			return nil, fmt.Errorf(
+				"cluster %s has no channel group in profile or cluster description",
+				clusterID,
+			)
+		}
+	}
+
+	clusterDescription, err := c.DescribeClusterAndReflect(clusterID)
+	if err != nil {
+		return nil, err
+	}
+
+	return prepareYStreamUpgradeChannel(
+		clusterID,
+		clusterDescription.Channel,
+		clusterVersion,
+		channelGroup,
+		c.EditCluster,
+	)
+}
+
 func (c *clusterService) GetJSONClusterDescription(clusterID string) (*jsonData, error) {
 	c.client.Runner.JsonFormat()
+	defer c.client.Runner.UnsetFormat()
 	output, err := c.DescribeCluster(clusterID)
 	if err != nil {
 		log.Logger.Errorf("it met error when describeCluster in IsUsingReusableOIDCConfig is %v", err)
 		return nil, err
 	}
-	c.client.Runner.UnsetFormat()
 	return c.client.Parser.JsonData.Input(output).Parse(), nil
 }
 
@@ -437,10 +559,34 @@ func (c *clusterService) ResumeCluster(clusterID string, flags ...string) (bytes
 
 // Wait cluster to some status, the inerval and duration are using minute
 func (c *clusterService) WaitClusterStatus(clusterID string, status string, interval int, duration int) error {
+	if strings.TrimSpace(clusterID) == "" {
+		return fmt.Errorf("cluster ID is required when waiting for cluster status %s", status)
+	}
+
+	waitInterval := time.Duration(interval) * time.Minute
+	if waitInterval <= 0 {
+		waitInterval = time.Millisecond
+	}
+	waitTimeout := time.Duration(duration) * time.Minute
+	if waitTimeout <= 0 {
+		waitTimeout = 200 * time.Millisecond
+	}
+
+	if status == constants.Ready {
+		return waitForClusterReadyStatus(
+			clusterID,
+			waitInterval,
+			waitTimeout,
+			func() (*ClusterDescription, error) {
+				return c.DescribeClusterAndReflect(clusterID)
+			},
+		)
+	}
+
 	err := wait.PollUntilContextTimeout(
 		context.Background(),
-		time.Duration(interval)*time.Minute,
-		time.Duration(duration)*time.Minute,
+		waitInterval,
+		waitTimeout,
 		false,
 		func(context.Context) (bool, error) {
 			clusterListB, err := c.List()
@@ -461,6 +607,122 @@ func (c *clusterService) WaitClusterStatus(clusterID string, status string, inte
 			return false, err
 		})
 	return err
+}
+
+func waitForClusterReadyStatus(
+	clusterID string,
+	interval time.Duration,
+	timeout time.Duration,
+	getDescription func() (*ClusterDescription, error),
+) error {
+	var lastDescription *ClusterDescription
+	err := wait.PollUntilContextTimeout(
+		context.Background(),
+		interval,
+		timeout,
+		true,
+		func(context.Context) (bool, error) {
+			description, err := getDescription()
+			if err != nil {
+				if isClusterNotFoundErr(clusterID, err) {
+					return false, fmt.Errorf(
+						"cluster %s not found while waiting for it to become ready: %w",
+						clusterID, err,
+					)
+				}
+				return false, err
+			}
+			lastDescription = description
+
+			return evaluateReadyClusterState(clusterID, description)
+		},
+	)
+	if err == nil {
+		return nil
+	}
+
+	if errors.Is(err, context.DeadlineExceeded) {
+		return formatReadyClusterTimeout(clusterID, timeout, lastDescription)
+	}
+
+	return err
+}
+
+func isClusterNotFoundErr(clusterID string, err error) bool {
+	if err == nil {
+		return false
+	}
+
+	message := err.Error()
+	return strings.Contains(message,
+		fmt.Sprintf("There is no cluster with identifier or name '%s'", clusterID)) ||
+		strings.Contains(message, fmt.Sprintf("Cluster '%s' not found", clusterID))
+}
+
+func provisioningDetails(description *ClusterDescription) []string {
+	if description == nil {
+		return nil
+	}
+
+	details := []string{}
+	if description.ProvisioningErrorCode != "" {
+		details = append(details, fmt.Sprintf("provisioning error code: %s", description.ProvisioningErrorCode))
+	}
+	if description.ProvisioningErrorMessage != "" {
+		details = append(details, fmt.Sprintf("provisioning error message: %s", description.ProvisioningErrorMessage))
+	}
+	if description.FailedInflightChecks != "" {
+		details = append(details, fmt.Sprintf("failed inflight checks: %s", description.FailedInflightChecks))
+	}
+
+	return details
+}
+
+func formatReadyClusterError(clusterID string, description *ClusterDescription) error {
+	details := provisioningDetails(description)
+	if len(details) == 0 {
+		return fmt.Errorf("cluster %s is in %s state", clusterID, description.State)
+	}
+
+	return fmt.Errorf("cluster %s is in %s state (%s)",
+		clusterID, description.State, strings.Join(details, "; "))
+}
+
+func formatReadyClusterTimeout(clusterID string, timeout time.Duration, description *ClusterDescription) error {
+	timeoutMinutes := int(timeout / time.Minute)
+	if description == nil {
+		return fmt.Errorf("timeout for cluster ready waiting after %d mins", timeoutMinutes)
+	}
+
+	details := append([]string{fmt.Sprintf("last state: %s", description.State)}, provisioningDetails(description)...)
+
+	return fmt.Errorf("timeout for cluster ready waiting after %d mins (%s)",
+		timeoutMinutes, strings.Join(details, "; "))
+}
+
+func evaluateReadyClusterState(clusterID string, description *ClusterDescription) (bool, error) {
+	if description == nil {
+		return false, fmt.Errorf("no cluster description found for %s", clusterID)
+	}
+
+	if description.State == constants.Ready {
+		return true, nil
+	}
+
+	if strings.Contains(description.State, constants.Uninstalling) {
+		return false, fmt.Errorf("cluster %s is %s now. Cannot wait for it ready",
+			clusterID, constants.Uninstalling)
+	}
+
+	if strings.Contains(description.State, constants.Error) {
+		return false, formatReadyClusterError(clusterID, description)
+	}
+
+	if strings.TrimSpace(description.State) == "" {
+		return false, fmt.Errorf("cluster %s returned an empty state", clusterID)
+	}
+
+	return false, nil
 }
 
 // Wait for cluster deleted
@@ -526,4 +788,13 @@ func (c *clusterService) WaitForClusterPassWaiting(clusterID string, interval in
 		time.Sleep(time.Duration(interval) * time.Minute)
 	}
 	return fmt.Errorf("timeout for cluster stuck waiting after %d mins", timeoutMin)
+}
+
+func (c *clusterService) IsLimitedSupport(clusterID string) (bool, error) {
+	description, err := c.DescribeClusterAndReflect(clusterID)
+	if err != nil {
+		return false, err
+	}
+	limitedSupport := len(description.LimitedSupport) != 0
+	return limitedSupport, nil
 }

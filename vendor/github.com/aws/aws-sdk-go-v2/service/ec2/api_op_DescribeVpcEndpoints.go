@@ -5,13 +5,14 @@ package ec2
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Describes your VPC endpoints.
+// Describes your VPC endpoints. The default is to describe all your VPC
+// endpoints. Alternatively, you can specify specific VPC endpoint IDs or filter
+// the results to include only the VPC endpoints that match specific criteria.
 func (c *Client) DescribeVpcEndpoints(ctx context.Context, params *DescribeVpcEndpointsInput, optFns ...func(*Options)) (*DescribeVpcEndpointsOutput, error) {
 	if params == nil {
 		params = &DescribeVpcEndpointsInput{}
@@ -36,24 +37,35 @@ type DescribeVpcEndpointsInput struct {
 	DryRun *bool
 
 	// The filters.
+	//
 	//   - ip-address-type - The IP address type ( ipv4 | ipv6 ).
+	//
 	//   - service-name - The name of the service.
+	//
+	//   - service-region - The Region of the service.
+	//
 	//   - tag : - The key/value combination of a tag assigned to the resource. Use the
 	//   tag key in the filter name and the tag value as the filter value. For example,
 	//   to find all resources that have a tag with the key Owner and the value TeamA ,
 	//   specify tag:Owner for the filter name and TeamA for the filter value.
+	//
 	//   - tag-key - The key of a tag assigned to the resource. Use this filter to find
 	//   all resources assigned a tag with a specific key, regardless of the tag value.
+	//
 	//   - vpc-id - The ID of the VPC in which the endpoint resides.
+	//
 	//   - vpc-endpoint-id - The ID of the endpoint.
+	//
 	//   - vpc-endpoint-state - The state of the endpoint ( pendingAcceptance | pending
 	//   | available | deleting | deleted | rejected | failed ).
+	//
 	//   - vpc-endpoint-type - The type of VPC endpoint ( Interface | Gateway |
-	//   GatewayLoadBalancer ).
+	//   GatewayLoadBalancer | Resource | ServiceNetwork ).
 	Filters []types.Filter
 
 	// The maximum number of items to return for this request. The request returns a
 	// token that you can specify in a subsequent call to get the next set of results.
+	//
 	// Constraint: If the value is greater than 1,000, we return only 1,000 items.
 	MaxResults *int32
 
@@ -73,7 +85,7 @@ type DescribeVpcEndpointsOutput struct {
 	// additional items to return, the string is empty.
 	NextToken *string
 
-	// Information about the endpoints.
+	// Information about the VPC endpoints.
 	VpcEndpoints []types.VpcEndpoint
 
 	// Metadata pertaining to the operation's result.
@@ -83,9 +95,6 @@ type DescribeVpcEndpointsOutput struct {
 }
 
 func (c *Client) addOperationDescribeVpcEndpointsMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpDescribeVpcEndpoints{}, middleware.After)
 	if err != nil {
 		return err
@@ -94,17 +103,8 @@ func (c *Client) addOperationDescribeVpcEndpointsMiddlewares(stack *middleware.S
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeVpcEndpoints"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -116,16 +116,7 @@ func (c *Client) addOperationDescribeVpcEndpointsMiddlewares(stack *middleware.S
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -134,13 +125,10 @@ func (c *Client) addOperationDescribeVpcEndpointsMiddlewares(stack *middleware.S
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeVpcEndpoints(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DescribeVpcEndpoints"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -155,22 +143,18 @@ func (c *Client) addOperationDescribeVpcEndpointsMiddlewares(stack *middleware.S
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
+	if err = addInterceptors(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
-
-// DescribeVpcEndpointsAPIClient is a client that implements the
-// DescribeVpcEndpoints operation.
-type DescribeVpcEndpointsAPIClient interface {
-	DescribeVpcEndpoints(context.Context, *DescribeVpcEndpointsInput, ...func(*Options)) (*DescribeVpcEndpointsOutput, error)
-}
-
-var _ DescribeVpcEndpointsAPIClient = (*Client)(nil)
 
 // DescribeVpcEndpointsPaginatorOptions is the paginator options for
 // DescribeVpcEndpoints
 type DescribeVpcEndpointsPaginatorOptions struct {
 	// The maximum number of items to return for this request. The request returns a
 	// token that you can specify in a subsequent call to get the next set of results.
+	//
 	// Constraint: If the value is greater than 1,000, we return only 1,000 items.
 	Limit int32
 
@@ -232,6 +216,9 @@ func (p *DescribeVpcEndpointsPaginator) NextPage(ctx context.Context, optFns ...
 	}
 	params.MaxResults = limit
 
+	optFns = append([]func(*Options){
+		addIsPaginatorUserAgent,
+	}, optFns...)
 	result, err := p.client.DescribeVpcEndpoints(ctx, &params, optFns...)
 	if err != nil {
 		return nil, err
@@ -251,10 +238,10 @@ func (p *DescribeVpcEndpointsPaginator) NextPage(ctx context.Context, optFns ...
 	return result, nil
 }
 
-func newServiceMetadataMiddleware_opDescribeVpcEndpoints(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeVpcEndpoints",
-	}
+// DescribeVpcEndpointsAPIClient is a client that implements the
+// DescribeVpcEndpoints operation.
+type DescribeVpcEndpointsAPIClient interface {
+	DescribeVpcEndpoints(context.Context, *DescribeVpcEndpointsInput, ...func(*Options)) (*DescribeVpcEndpointsOutput, error)
 }
+
+var _ DescribeVpcEndpointsAPIClient = (*Client)(nil)

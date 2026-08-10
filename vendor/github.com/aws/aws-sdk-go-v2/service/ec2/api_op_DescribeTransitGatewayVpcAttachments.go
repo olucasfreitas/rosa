@@ -5,7 +5,6 @@ package ec2
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -37,11 +36,15 @@ type DescribeTransitGatewayVpcAttachmentsInput struct {
 	DryRun *bool
 
 	// One or more filters. The possible values are:
+	//
 	//   - state - The state of the attachment. Valid values are available | deleted |
 	//   deleting | failed | failing | initiatingRequest | modifying |
 	//   pendingAcceptance | pending | rollingBack | rejected | rejecting .
+	//
 	//   - transit-gateway-attachment-id - The ID of the attachment.
+	//
 	//   - transit-gateway-id - The ID of the transit gateway.
+	//
 	//   - vpc-id - The ID of the VPC.
 	Filters []types.Filter
 
@@ -74,9 +77,6 @@ type DescribeTransitGatewayVpcAttachmentsOutput struct {
 }
 
 func (c *Client) addOperationDescribeTransitGatewayVpcAttachmentsMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpDescribeTransitGatewayVpcAttachments{}, middleware.After)
 	if err != nil {
 		return err
@@ -85,17 +85,8 @@ func (c *Client) addOperationDescribeTransitGatewayVpcAttachmentsMiddlewares(sta
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeTransitGatewayVpcAttachments"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -107,16 +98,7 @@ func (c *Client) addOperationDescribeTransitGatewayVpcAttachmentsMiddlewares(sta
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -125,13 +107,10 @@ func (c *Client) addOperationDescribeTransitGatewayVpcAttachmentsMiddlewares(sta
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeTransitGatewayVpcAttachments(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DescribeTransitGatewayVpcAttachments"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -146,16 +125,11 @@ func (c *Client) addOperationDescribeTransitGatewayVpcAttachmentsMiddlewares(sta
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
+	if err = addInterceptors(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
-
-// DescribeTransitGatewayVpcAttachmentsAPIClient is a client that implements the
-// DescribeTransitGatewayVpcAttachments operation.
-type DescribeTransitGatewayVpcAttachmentsAPIClient interface {
-	DescribeTransitGatewayVpcAttachments(context.Context, *DescribeTransitGatewayVpcAttachmentsInput, ...func(*Options)) (*DescribeTransitGatewayVpcAttachmentsOutput, error)
-}
-
-var _ DescribeTransitGatewayVpcAttachmentsAPIClient = (*Client)(nil)
 
 // DescribeTransitGatewayVpcAttachmentsPaginatorOptions is the paginator options
 // for DescribeTransitGatewayVpcAttachments
@@ -224,6 +198,9 @@ func (p *DescribeTransitGatewayVpcAttachmentsPaginator) NextPage(ctx context.Con
 	}
 	params.MaxResults = limit
 
+	optFns = append([]func(*Options){
+		addIsPaginatorUserAgent,
+	}, optFns...)
 	result, err := p.client.DescribeTransitGatewayVpcAttachments(ctx, &params, optFns...)
 	if err != nil {
 		return nil, err
@@ -243,10 +220,10 @@ func (p *DescribeTransitGatewayVpcAttachmentsPaginator) NextPage(ctx context.Con
 	return result, nil
 }
 
-func newServiceMetadataMiddleware_opDescribeTransitGatewayVpcAttachments(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeTransitGatewayVpcAttachments",
-	}
+// DescribeTransitGatewayVpcAttachmentsAPIClient is a client that implements the
+// DescribeTransitGatewayVpcAttachments operation.
+type DescribeTransitGatewayVpcAttachmentsAPIClient interface {
+	DescribeTransitGatewayVpcAttachments(context.Context, *DescribeTransitGatewayVpcAttachmentsInput, ...func(*Options)) (*DescribeTransitGatewayVpcAttachmentsOutput, error)
 }
+
+var _ DescribeTransitGatewayVpcAttachmentsAPIClient = (*Client)(nil)

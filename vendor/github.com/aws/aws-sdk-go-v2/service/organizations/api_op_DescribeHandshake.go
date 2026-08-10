@@ -4,19 +4,18 @@ package organizations
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Retrieves information about a previously requested handshake. The handshake ID
-// comes from the response to the original InviteAccountToOrganization operation
-// that generated the handshake. You can access handshakes that are ACCEPTED ,
-// DECLINED , or CANCELED for only 30 days after they change to that state.
-// They're then deleted and no longer accessible. This operation can be called from
-// any account in the organization.
+// Returns details for a handshake. A handshake is the secure exchange of
+// information between two Amazon Web Services accounts: a sender and a recipient.
+//
+// You can view ACCEPTED , DECLINED , or CANCELED handshakes in API Responses for
+// 30 days before they are deleted.
+//
+// You can call this operation from any account in a organization.
 func (c *Client) DescribeHandshake(ctx context.Context, params *DescribeHandshakeInput, optFns ...func(*Options)) (*DescribeHandshakeOutput, error) {
 	if params == nil {
 		params = &DescribeHandshakeInput{}
@@ -34,11 +33,12 @@ func (c *Client) DescribeHandshake(ctx context.Context, params *DescribeHandshak
 
 type DescribeHandshakeInput struct {
 
-	// The unique identifier (ID) of the handshake that you want information about.
-	// You can get the ID from the original call to InviteAccountToOrganization , or
-	// from a call to ListHandshakesForAccount or ListHandshakesForOrganization . The
-	// regex pattern (http://wikipedia.org/wiki/regex) for handshake ID string requires
-	// "h-" followed by from 8 to 32 lowercase letters or digits.
+	// ID for the handshake that you want information about.
+	//
+	// The [regex pattern] for handshake ID string requires "h-" followed by from 8 to 32 lowercase
+	// letters or digits.
+	//
+	// [regex pattern]: http://wikipedia.org/wiki/regex
 	//
 	// This member is required.
 	HandshakeId *string
@@ -48,7 +48,7 @@ type DescribeHandshakeInput struct {
 
 type DescribeHandshakeOutput struct {
 
-	// A structure that contains information about the specified handshake.
+	// A Handshake object. Contains details for the handshake.
 	Handshake *types.Handshake
 
 	// Metadata pertaining to the operation's result.
@@ -58,9 +58,6 @@ type DescribeHandshakeOutput struct {
 }
 
 func (c *Client) addOperationDescribeHandshakeMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpDescribeHandshake{}, middleware.After)
 	if err != nil {
 		return err
@@ -69,17 +66,8 @@ func (c *Client) addOperationDescribeHandshakeMiddlewares(stack *middleware.Stac
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeHandshake"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -91,16 +79,7 @@ func (c *Client) addOperationDescribeHandshakeMiddlewares(stack *middleware.Stac
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -109,16 +88,13 @@ func (c *Client) addOperationDescribeHandshakeMiddlewares(stack *middleware.Stac
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpDescribeHandshakeValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeHandshake(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DescribeHandshake"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -133,13 +109,8 @@ func (c *Client) addOperationDescribeHandshakeMiddlewares(stack *middleware.Stac
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opDescribeHandshake(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeHandshake",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

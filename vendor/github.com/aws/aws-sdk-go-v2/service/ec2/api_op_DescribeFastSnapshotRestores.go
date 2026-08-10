@@ -5,7 +5,6 @@ package ec2
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -36,18 +35,27 @@ type DescribeFastSnapshotRestoresInput struct {
 	DryRun *bool
 
 	// The filters. The possible values are:
-	//   - availability-zone : The Availability Zone of the snapshot.
+	//
+	//   - availability-zone : The Availability Zone of the snapshot. For example,
+	//   us-east-2a .
+	//
+	//   - availability-zone-id : The ID of the Availability Zone of the snapshot. For
+	//   example, use2-az1 .
+	//
 	//   - owner-id : The ID of the Amazon Web Services account that enabled fast
 	//   snapshot restore on the snapshot.
+	//
 	//   - snapshot-id : The ID of the snapshot.
+	//
 	//   - state : The state of fast snapshot restores for the snapshot ( enabling |
 	//   optimizing | enabled | disabling | disabled ).
 	Filters []types.Filter
 
 	// The maximum number of items to return for this request. To get the next page of
 	// items, make another request with the token returned in the output. For more
-	// information, see Pagination (https://docs.aws.amazon.com/AWSEC2/latest/APIReference/Query-Requests.html#api-pagination)
-	// .
+	// information, see [Pagination].
+	//
+	// [Pagination]: https://docs.aws.amazon.com/AWSEC2/latest/APIReference/Query-Requests.html#api-pagination
 	MaxResults *int32
 
 	// The token returned from a previous paginated request. Pagination continues from
@@ -73,9 +81,6 @@ type DescribeFastSnapshotRestoresOutput struct {
 }
 
 func (c *Client) addOperationDescribeFastSnapshotRestoresMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpDescribeFastSnapshotRestores{}, middleware.After)
 	if err != nil {
 		return err
@@ -84,17 +89,8 @@ func (c *Client) addOperationDescribeFastSnapshotRestoresMiddlewares(stack *midd
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeFastSnapshotRestores"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -106,16 +102,7 @@ func (c *Client) addOperationDescribeFastSnapshotRestoresMiddlewares(stack *midd
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -124,13 +111,10 @@ func (c *Client) addOperationDescribeFastSnapshotRestoresMiddlewares(stack *midd
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeFastSnapshotRestores(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DescribeFastSnapshotRestores"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -145,24 +129,20 @@ func (c *Client) addOperationDescribeFastSnapshotRestoresMiddlewares(stack *midd
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
+	if err = addInterceptors(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
-
-// DescribeFastSnapshotRestoresAPIClient is a client that implements the
-// DescribeFastSnapshotRestores operation.
-type DescribeFastSnapshotRestoresAPIClient interface {
-	DescribeFastSnapshotRestores(context.Context, *DescribeFastSnapshotRestoresInput, ...func(*Options)) (*DescribeFastSnapshotRestoresOutput, error)
-}
-
-var _ DescribeFastSnapshotRestoresAPIClient = (*Client)(nil)
 
 // DescribeFastSnapshotRestoresPaginatorOptions is the paginator options for
 // DescribeFastSnapshotRestores
 type DescribeFastSnapshotRestoresPaginatorOptions struct {
 	// The maximum number of items to return for this request. To get the next page of
 	// items, make another request with the token returned in the output. For more
-	// information, see Pagination (https://docs.aws.amazon.com/AWSEC2/latest/APIReference/Query-Requests.html#api-pagination)
-	// .
+	// information, see [Pagination].
+	//
+	// [Pagination]: https://docs.aws.amazon.com/AWSEC2/latest/APIReference/Query-Requests.html#api-pagination
 	Limit int32
 
 	// Set to true if pagination should stop if the service returns a pagination token
@@ -225,6 +205,9 @@ func (p *DescribeFastSnapshotRestoresPaginator) NextPage(ctx context.Context, op
 	}
 	params.MaxResults = limit
 
+	optFns = append([]func(*Options){
+		addIsPaginatorUserAgent,
+	}, optFns...)
 	result, err := p.client.DescribeFastSnapshotRestores(ctx, &params, optFns...)
 	if err != nil {
 		return nil, err
@@ -244,10 +227,10 @@ func (p *DescribeFastSnapshotRestoresPaginator) NextPage(ctx context.Context, op
 	return result, nil
 }
 
-func newServiceMetadataMiddleware_opDescribeFastSnapshotRestores(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeFastSnapshotRestores",
-	}
+// DescribeFastSnapshotRestoresAPIClient is a client that implements the
+// DescribeFastSnapshotRestores operation.
+type DescribeFastSnapshotRestoresAPIClient interface {
+	DescribeFastSnapshotRestores(context.Context, *DescribeFastSnapshotRestoresInput, ...func(*Options)) (*DescribeFastSnapshotRestoresOutput, error)
 }
+
+var _ DescribeFastSnapshotRestoresAPIClient = (*Client)(nil)

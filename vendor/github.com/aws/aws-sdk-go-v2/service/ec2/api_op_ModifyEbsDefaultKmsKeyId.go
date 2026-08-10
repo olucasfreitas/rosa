@@ -4,23 +4,24 @@ package ec2
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // Changes the default KMS key for EBS encryption by default for your account in
-// this Region. Amazon Web Services creates a unique Amazon Web Services managed
-// KMS key in each Region for use with encryption by default. If you change the
-// default KMS key to a symmetric customer managed KMS key, it is used instead of
-// the Amazon Web Services managed KMS key. To reset the default KMS key to the
-// Amazon Web Services managed KMS key for EBS, use ResetEbsDefaultKmsKeyId .
-// Amazon EBS does not support asymmetric KMS keys. If you delete or disable the
-// customer managed KMS key that you specified for use with encryption by default,
-// your instances will fail to launch. For more information, see Amazon EBS
-// encryption (https://docs.aws.amazon.com/ebs/latest/userguide/ebs-encryption.html)
-// in the Amazon EBS User Guide.
+// this Region.
+//
+// Amazon Web Services creates a unique Amazon Web Services managed KMS key in
+// each Region for use with encryption by default. If you change the default KMS
+// key to a symmetric customer managed KMS key, it is used instead of the Amazon
+// Web Services managed KMS key. Amazon EBS does not support asymmetric KMS keys.
+//
+// If you delete or disable the customer managed KMS key that you specified for
+// use with encryption by default, your instances will fail to launch.
+//
+// For more information, see [Amazon EBS encryption] in the Amazon EBS User Guide.
+//
+// [Amazon EBS encryption]: https://docs.aws.amazon.com/ebs/latest/userguide/ebs-encryption.html
 func (c *Client) ModifyEbsDefaultKmsKeyId(ctx context.Context, params *ModifyEbsDefaultKmsKeyIdInput, optFns ...func(*Options)) (*ModifyEbsDefaultKmsKeyIdOutput, error) {
 	if params == nil {
 		params = &ModifyEbsDefaultKmsKeyIdInput{}
@@ -38,19 +39,27 @@ func (c *Client) ModifyEbsDefaultKmsKeyId(ctx context.Context, params *ModifyEbs
 
 type ModifyEbsDefaultKmsKeyIdInput struct {
 
-	// The identifier of the Key Management Service (KMS) KMS key to use for Amazon
-	// EBS encryption. If this parameter is not specified, your KMS key for Amazon EBS
-	// is used. If KmsKeyId is specified, the encrypted state must be true . You can
-	// specify the KMS key using any of the following:
+	// The identifier of the KMS key to use for Amazon EBS encryption. If this
+	// parameter is not specified, your KMS key for Amazon EBS is used. If KmsKeyId is
+	// specified, the encrypted state must be true .
+	//
+	// You can specify the KMS key using any of the following:
+	//
 	//   - Key ID. For example, 1234abcd-12ab-34cd-56ef-1234567890ab.
+	//
 	//   - Key alias. For example, alias/ExampleAlias.
+	//
 	//   - Key ARN. For example,
 	//   arn:aws:kms:us-east-1:012345678910:key/1234abcd-12ab-34cd-56ef-1234567890ab.
+	//
 	//   - Alias ARN. For example,
 	//   arn:aws:kms:us-east-1:012345678910:alias/ExampleAlias.
+	//
 	// Amazon Web Services authenticates the KMS key asynchronously. Therefore, if you
 	// specify an ID, alias, or ARN that is not valid, the action can appear to
-	// complete, but eventually fails. Amazon EBS does not support asymmetric KMS keys.
+	// complete, but eventually fails.
+	//
+	// Amazon EBS does not support asymmetric KMS keys.
 	//
 	// This member is required.
 	KmsKeyId *string
@@ -76,9 +85,6 @@ type ModifyEbsDefaultKmsKeyIdOutput struct {
 }
 
 func (c *Client) addOperationModifyEbsDefaultKmsKeyIdMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpModifyEbsDefaultKmsKeyId{}, middleware.After)
 	if err != nil {
 		return err
@@ -87,17 +93,8 @@ func (c *Client) addOperationModifyEbsDefaultKmsKeyIdMiddlewares(stack *middlewa
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "ModifyEbsDefaultKmsKeyId"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -109,16 +106,7 @@ func (c *Client) addOperationModifyEbsDefaultKmsKeyIdMiddlewares(stack *middlewa
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -127,16 +115,13 @@ func (c *Client) addOperationModifyEbsDefaultKmsKeyIdMiddlewares(stack *middlewa
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpModifyEbsDefaultKmsKeyIdValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opModifyEbsDefaultKmsKeyId(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "ModifyEbsDefaultKmsKeyId"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -151,13 +136,8 @@ func (c *Client) addOperationModifyEbsDefaultKmsKeyIdMiddlewares(stack *middlewa
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opModifyEbsDefaultKmsKeyId(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "ModifyEbsDefaultKmsKeyId",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

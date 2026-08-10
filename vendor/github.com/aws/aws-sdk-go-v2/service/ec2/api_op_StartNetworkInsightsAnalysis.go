@@ -5,7 +5,6 @@ package ec2
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -31,8 +30,9 @@ func (c *Client) StartNetworkInsightsAnalysis(ctx context.Context, params *Start
 type StartNetworkInsightsAnalysisInput struct {
 
 	// Unique, case-sensitive identifier that you provide to ensure the idempotency of
-	// the request. For more information, see How to ensure idempotency (https://docs.aws.amazon.com/AWSEC2/latest/APIReference/Run_Instance_Idempotency.html)
-	// .
+	// the request. For more information, see [How to ensure idempotency].
+	//
+	// [How to ensure idempotency]: https://docs.aws.amazon.com/ec2/latest/devguide/ec2-api-idempotency.html
 	//
 	// This member is required.
 	ClientToken *string
@@ -54,6 +54,9 @@ type StartNetworkInsightsAnalysisInput struct {
 	// The Amazon Resource Names (ARN) of the resources that the path must traverse.
 	FilterInArns []string
 
+	// The Amazon Resource Names (ARN) of the resources that the path will ignore.
+	FilterOutArns []string
+
 	// The tags to apply.
 	TagSpecifications []types.TagSpecification
 
@@ -72,9 +75,6 @@ type StartNetworkInsightsAnalysisOutput struct {
 }
 
 func (c *Client) addOperationStartNetworkInsightsAnalysisMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpStartNetworkInsightsAnalysis{}, middleware.After)
 	if err != nil {
 		return err
@@ -83,17 +83,8 @@ func (c *Client) addOperationStartNetworkInsightsAnalysisMiddlewares(stack *midd
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "StartNetworkInsightsAnalysis"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -105,16 +96,7 @@ func (c *Client) addOperationStartNetworkInsightsAnalysisMiddlewares(stack *midd
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -123,7 +105,7 @@ func (c *Client) addOperationStartNetworkInsightsAnalysisMiddlewares(stack *midd
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addIdempotencyToken_opStartNetworkInsightsAnalysisMiddleware(stack, options); err != nil {
@@ -132,10 +114,7 @@ func (c *Client) addOperationStartNetworkInsightsAnalysisMiddlewares(stack *midd
 	if err = addOpStartNetworkInsightsAnalysisValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opStartNetworkInsightsAnalysis(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "StartNetworkInsightsAnalysis"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -148,6 +127,9 @@ func (c *Client) addOperationStartNetworkInsightsAnalysisMiddlewares(stack *midd
 		return err
 	}
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil
@@ -184,12 +166,4 @@ func (m *idempotencyToken_initializeOpStartNetworkInsightsAnalysis) HandleInitia
 }
 func addIdempotencyToken_opStartNetworkInsightsAnalysisMiddleware(stack *middleware.Stack, cfg Options) error {
 	return stack.Initialize.Add(&idempotencyToken_initializeOpStartNetworkInsightsAnalysis{tokenProvider: cfg.IdempotencyTokenProvider}, middleware.Before)
-}
-
-func newServiceMetadataMiddleware_opStartNetworkInsightsAnalysis(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "StartNetworkInsightsAnalysis",
-	}
 }

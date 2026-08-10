@@ -4,18 +4,18 @@ package organizations
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Retrieves information about the organization that the user's account belongs
-// to. This operation can be called from any account in the organization. Even if a
-// policy type is shown as available in the organization, you can disable it
-// separately at the root level with DisablePolicyType . Use ListRoots to see the
-// status of policy types for a specified root.
+// Retrieves information about the organization that the user's account belongs to.
+//
+// You can call this operation from any account in a organization.
+//
+// Even if a policy type is shown as available in the organization, you can
+// disable it separately at the root level with DisablePolicyType. Use ListRoots to see the status of policy
+// types for a specified root.
 func (c *Client) DescribeOrganization(ctx context.Context, params *DescribeOrganizationInput, optFns ...func(*Options)) (*DescribeOrganizationOutput, error) {
 	if params == nil {
 		params = &DescribeOrganizationInput{}
@@ -37,11 +37,13 @@ type DescribeOrganizationInput struct {
 
 type DescribeOrganizationOutput struct {
 
-	// A structure that contains information about the organization. The
-	// AvailablePolicyTypes part of the response is deprecated, and you shouldn't use
-	// it in your apps. It doesn't include any policy type supported by Organizations
-	// other than SCPs. To determine which policy types are enabled in your
-	// organization, use the ListRoots operation.
+	// A structure that contains information about the organization.
+	//
+	// The AvailablePolicyTypes part of the response is deprecated, and you shouldn't
+	// use it in your apps. It doesn't include any policy type supported by
+	// Organizations other than SCPs. In the China (Ningxia) Region, no policy type is
+	// included. To determine which policy types are enabled in your organization, use
+	// the ListRootsoperation.
 	Organization *types.Organization
 
 	// Metadata pertaining to the operation's result.
@@ -51,9 +53,6 @@ type DescribeOrganizationOutput struct {
 }
 
 func (c *Client) addOperationDescribeOrganizationMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpDescribeOrganization{}, middleware.After)
 	if err != nil {
 		return err
@@ -62,17 +61,8 @@ func (c *Client) addOperationDescribeOrganizationMiddlewares(stack *middleware.S
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeOrganization"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -84,16 +74,7 @@ func (c *Client) addOperationDescribeOrganizationMiddlewares(stack *middleware.S
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -102,13 +83,10 @@ func (c *Client) addOperationDescribeOrganizationMiddlewares(stack *middleware.S
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeOrganization(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DescribeOrganization"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -123,13 +101,8 @@ func (c *Client) addOperationDescribeOrganizationMiddlewares(stack *middleware.S
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opDescribeOrganization(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeOrganization",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

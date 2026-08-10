@@ -5,15 +5,15 @@ package ec2
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // Describes the attributes of the specified Elastic IP addresses. For
-// requirements, see Using reverse DNS for email applications (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/elastic-ip-addresses-eip.html#Using_Elastic_Addressing_Reverse_DNS)
-// .
+// requirements, see [Using reverse DNS for email applications].
+//
+// [Using reverse DNS for email applications]: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/elastic-ip-addresses-eip.html#Using_Elastic_Addressing_Reverse_DNS
 func (c *Client) DescribeAddressesAttribute(ctx context.Context, params *DescribeAddressesAttributeInput, optFns ...func(*Options)) (*DescribeAddressesAttributeOutput, error) {
 	if params == nil {
 		params = &DescribeAddressesAttributeInput{}
@@ -69,9 +69,6 @@ type DescribeAddressesAttributeOutput struct {
 }
 
 func (c *Client) addOperationDescribeAddressesAttributeMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpDescribeAddressesAttribute{}, middleware.After)
 	if err != nil {
 		return err
@@ -80,17 +77,8 @@ func (c *Client) addOperationDescribeAddressesAttributeMiddlewares(stack *middle
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeAddressesAttribute"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -102,16 +90,7 @@ func (c *Client) addOperationDescribeAddressesAttributeMiddlewares(stack *middle
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -120,13 +99,10 @@ func (c *Client) addOperationDescribeAddressesAttributeMiddlewares(stack *middle
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeAddressesAttribute(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DescribeAddressesAttribute"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -141,16 +117,11 @@ func (c *Client) addOperationDescribeAddressesAttributeMiddlewares(stack *middle
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
+	if err = addInterceptors(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
-
-// DescribeAddressesAttributeAPIClient is a client that implements the
-// DescribeAddressesAttribute operation.
-type DescribeAddressesAttributeAPIClient interface {
-	DescribeAddressesAttribute(context.Context, *DescribeAddressesAttributeInput, ...func(*Options)) (*DescribeAddressesAttributeOutput, error)
-}
-
-var _ DescribeAddressesAttributeAPIClient = (*Client)(nil)
 
 // DescribeAddressesAttributePaginatorOptions is the paginator options for
 // DescribeAddressesAttribute
@@ -219,6 +190,9 @@ func (p *DescribeAddressesAttributePaginator) NextPage(ctx context.Context, optF
 	}
 	params.MaxResults = limit
 
+	optFns = append([]func(*Options){
+		addIsPaginatorUserAgent,
+	}, optFns...)
 	result, err := p.client.DescribeAddressesAttribute(ctx, &params, optFns...)
 	if err != nil {
 		return nil, err
@@ -238,10 +212,10 @@ func (p *DescribeAddressesAttributePaginator) NextPage(ctx context.Context, optF
 	return result, nil
 }
 
-func newServiceMetadataMiddleware_opDescribeAddressesAttribute(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeAddressesAttribute",
-	}
+// DescribeAddressesAttributeAPIClient is a client that implements the
+// DescribeAddressesAttribute operation.
+type DescribeAddressesAttributeAPIClient interface {
+	DescribeAddressesAttribute(context.Context, *DescribeAddressesAttributeInput, ...func(*Options)) (*DescribeAddressesAttributeOutput, error)
 }
+
+var _ DescribeAddressesAttributeAPIClient = (*Client)(nil)

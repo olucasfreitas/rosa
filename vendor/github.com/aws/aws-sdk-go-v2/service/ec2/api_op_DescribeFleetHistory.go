@@ -4,20 +4,21 @@ package ec2
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"time"
 )
 
-// Describes the events for the specified EC2 Fleet during the specified time. EC2
-// Fleet events are delayed by up to 30 seconds before they can be described. This
-// ensures that you can query by the last evaluated time and not miss a recorded
-// event. EC2 Fleet events are available for 48 hours. For more information, see
-// Monitor fleet events using Amazon EventBridge (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/fleet-monitor.html)
-// in the Amazon EC2 User Guide.
+// Describes the events for the specified EC2 Fleet during the specified time.
+//
+// EC2 Fleet events are delayed by up to 30 seconds before they can be described.
+// This ensures that you can query by the last evaluated time and not miss a
+// recorded event. EC2 Fleet events are available for 48 hours.
+//
+// For more information, see [Monitor fleet events using Amazon EventBridge] in the Amazon EC2 User Guide.
+//
+// [Monitor fleet events using Amazon EventBridge]: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/fleet-monitor.html
 func (c *Client) DescribeFleetHistory(ctx context.Context, params *DescribeFleetHistoryInput, optFns ...func(*Options)) (*DescribeFleetHistoryOutput, error) {
 	if params == nil {
 		params = &DescribeFleetHistoryInput{}
@@ -57,8 +58,9 @@ type DescribeFleetHistoryInput struct {
 
 	// The maximum number of items to return for this request. To get the next page of
 	// items, make another request with the token returned in the output. For more
-	// information, see Pagination (https://docs.aws.amazon.com/AWSEC2/latest/APIReference/Query-Requests.html#api-pagination)
-	// .
+	// information, see [Pagination].
+	//
+	// [Pagination]: https://docs.aws.amazon.com/AWSEC2/latest/APIReference/Query-Requests.html#api-pagination
 	MaxResults *int32
 
 	// The token returned from a previous paginated request. Pagination continues from
@@ -77,8 +79,9 @@ type DescribeFleetHistoryOutput struct {
 	HistoryRecords []types.HistoryRecordEntry
 
 	// The last date and time for the events, in UTC format (for example,
-	// YYYY-MM-DDTHH:MM:SSZ). All records up to this time were retrieved. If nextToken
-	// indicates that there are more items, this value is not present.
+	// YYYY-MM-DDTHH:MM:SSZ). All records up to this time were retrieved.
+	//
+	// If nextToken indicates that there are more items, this value is not present.
 	LastEvaluatedTime *time.Time
 
 	// The token to include in another request to get the next page of items. This
@@ -96,9 +99,6 @@ type DescribeFleetHistoryOutput struct {
 }
 
 func (c *Client) addOperationDescribeFleetHistoryMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpDescribeFleetHistory{}, middleware.After)
 	if err != nil {
 		return err
@@ -107,17 +107,8 @@ func (c *Client) addOperationDescribeFleetHistoryMiddlewares(stack *middleware.S
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeFleetHistory"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -129,16 +120,7 @@ func (c *Client) addOperationDescribeFleetHistoryMiddlewares(stack *middleware.S
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -147,16 +129,13 @@ func (c *Client) addOperationDescribeFleetHistoryMiddlewares(stack *middleware.S
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpDescribeFleetHistoryValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeFleetHistory(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DescribeFleetHistory"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -171,13 +150,8 @@ func (c *Client) addOperationDescribeFleetHistoryMiddlewares(stack *middleware.S
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opDescribeFleetHistory(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeFleetHistory",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

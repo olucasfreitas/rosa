@@ -4,17 +4,18 @@ package ec2
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // Initiates the verification process to prove that the service provider owns the
-// private DNS name domain for the endpoint service. The service provider must
-// successfully perform the verification before the consumer can use the name to
-// access the service. Before the service provider runs this command, they must add
-// a record to the DNS server.
+// private DNS name domain for the endpoint service.
+//
+// The service provider must successfully perform the verification before the
+// consumer can use the name to access the service.
+//
+// Before the service provider runs this command, they must add a record to the
+// DNS server.
 func (c *Client) StartVpcEndpointServicePrivateDnsVerification(ctx context.Context, params *StartVpcEndpointServicePrivateDnsVerificationInput, optFns ...func(*Options)) (*StartVpcEndpointServicePrivateDnsVerificationOutput, error) {
 	if params == nil {
 		params = &StartVpcEndpointServicePrivateDnsVerificationInput{}
@@ -58,9 +59,6 @@ type StartVpcEndpointServicePrivateDnsVerificationOutput struct {
 }
 
 func (c *Client) addOperationStartVpcEndpointServicePrivateDnsVerificationMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpStartVpcEndpointServicePrivateDnsVerification{}, middleware.After)
 	if err != nil {
 		return err
@@ -69,17 +67,8 @@ func (c *Client) addOperationStartVpcEndpointServicePrivateDnsVerificationMiddle
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "StartVpcEndpointServicePrivateDnsVerification"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -91,16 +80,7 @@ func (c *Client) addOperationStartVpcEndpointServicePrivateDnsVerificationMiddle
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -109,16 +89,13 @@ func (c *Client) addOperationStartVpcEndpointServicePrivateDnsVerificationMiddle
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpStartVpcEndpointServicePrivateDnsVerificationValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opStartVpcEndpointServicePrivateDnsVerification(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "StartVpcEndpointServicePrivateDnsVerification"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -133,13 +110,8 @@ func (c *Client) addOperationStartVpcEndpointServicePrivateDnsVerificationMiddle
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opStartVpcEndpointServicePrivateDnsVerification(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "StartVpcEndpointServicePrivateDnsVerification",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

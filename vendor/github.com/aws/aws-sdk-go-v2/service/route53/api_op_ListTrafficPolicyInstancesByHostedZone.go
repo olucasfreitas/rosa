@@ -4,21 +4,22 @@ package route53
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/route53/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // Gets information about the traffic policy instances that you created in a
-// specified hosted zone. After you submit a CreateTrafficPolicyInstance or an
-// UpdateTrafficPolicyInstance request, there's a brief delay while Amazon Route 53
-// creates the resource record sets that are specified in the traffic policy
-// definition. For more information, see the State response element. Route 53
-// returns a maximum of 100 items in each response. If you have a lot of traffic
-// policy instances, you can use the MaxItems parameter to list them in groups of
-// up to 100.
+// specified hosted zone.
+//
+// After you submit a CreateTrafficPolicyInstance or an UpdateTrafficPolicyInstance
+// request, there's a brief delay while Amazon Route 53 creates the resource record
+// sets that are specified in the traffic policy definition. For more information,
+// see the State response element.
+//
+// Route 53 returns a maximum of 100 items in each response. If you have a lot of
+// traffic policy instances, you can use the MaxItems parameter to list them in
+// groups of up to 100.
 func (c *Client) ListTrafficPolicyInstancesByHostedZone(ctx context.Context, params *ListTrafficPolicyInstancesByHostedZoneInput, optFns ...func(*Options)) (*ListTrafficPolicyInstancesByHostedZoneOutput, error) {
 	if params == nil {
 		params = &ListTrafficPolicyInstancesByHostedZoneInput{}
@@ -56,8 +57,10 @@ type ListTrafficPolicyInstancesByHostedZoneInput struct {
 	// ListTrafficPolicyInstances request. For the value of trafficpolicyinstancename ,
 	// specify the value of TrafficPolicyInstanceNameMarker from the previous
 	// response, which is the name of the first traffic policy instance in the next
-	// group of traffic policy instances. If the value of IsTruncated in the previous
-	// response was false , there are no more traffic policy instances to get.
+	// group of traffic policy instances.
+	//
+	// If the value of IsTruncated in the previous response was false , there are no
+	// more traffic policy instances to get.
 	TrafficPolicyInstanceNameMarker *string
 
 	// If the value of IsTruncated in the previous response is true, you have more
@@ -65,8 +68,10 @@ type ListTrafficPolicyInstancesByHostedZoneInput struct {
 	// ListTrafficPolicyInstances request. For the value of trafficpolicyinstancetype ,
 	// specify the value of TrafficPolicyInstanceTypeMarker from the previous
 	// response, which is the type of the first traffic policy instance in the next
-	// group of traffic policy instances. If the value of IsTruncated in the previous
-	// response was false , there are no more traffic policy instances to get.
+	// group of traffic policy instances.
+	//
+	// If the value of IsTruncated in the previous response was false , there are no
+	// more traffic policy instances to get.
 	TrafficPolicyInstanceTypeMarker types.RRType
 
 	noSmithyDocumentSerde
@@ -114,9 +119,6 @@ type ListTrafficPolicyInstancesByHostedZoneOutput struct {
 }
 
 func (c *Client) addOperationListTrafficPolicyInstancesByHostedZoneMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsRestxml_serializeOpListTrafficPolicyInstancesByHostedZone{}, middleware.After)
 	if err != nil {
 		return err
@@ -125,17 +127,8 @@ func (c *Client) addOperationListTrafficPolicyInstancesByHostedZoneMiddlewares(s
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "ListTrafficPolicyInstancesByHostedZone"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -147,16 +140,7 @@ func (c *Client) addOperationListTrafficPolicyInstancesByHostedZoneMiddlewares(s
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -165,16 +149,13 @@ func (c *Client) addOperationListTrafficPolicyInstancesByHostedZoneMiddlewares(s
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpListTrafficPolicyInstancesByHostedZoneValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opListTrafficPolicyInstancesByHostedZone(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "ListTrafficPolicyInstancesByHostedZone"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -192,13 +173,8 @@ func (c *Client) addOperationListTrafficPolicyInstancesByHostedZoneMiddlewares(s
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opListTrafficPolicyInstancesByHostedZone(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "ListTrafficPolicyInstancesByHostedZone",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

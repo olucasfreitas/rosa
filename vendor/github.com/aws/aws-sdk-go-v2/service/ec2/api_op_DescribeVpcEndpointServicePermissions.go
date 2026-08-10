@@ -5,14 +5,13 @@ package ec2
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // Describes the principals (service consumers) that are permitted to discover
-// your VPC endpoint service.
+// your VPC endpoint service. Principal ARNs with path components aren't supported.
 func (c *Client) DescribeVpcEndpointServicePermissions(ctx context.Context, params *DescribeVpcEndpointServicePermissionsInput, optFns ...func(*Options)) (*DescribeVpcEndpointServicePermissionsOutput, error) {
 	if params == nil {
 		params = &DescribeVpcEndpointServicePermissionsInput{}
@@ -42,7 +41,9 @@ type DescribeVpcEndpointServicePermissionsInput struct {
 	DryRun *bool
 
 	// The filters.
+	//
 	//   - principal - The ARN of the principal.
+	//
 	//   - principal-type - The principal type ( All | Service | OrganizationUnit |
 	//   Account | User | Role ).
 	Filters []types.Filter
@@ -75,9 +76,6 @@ type DescribeVpcEndpointServicePermissionsOutput struct {
 }
 
 func (c *Client) addOperationDescribeVpcEndpointServicePermissionsMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpDescribeVpcEndpointServicePermissions{}, middleware.After)
 	if err != nil {
 		return err
@@ -86,17 +84,8 @@ func (c *Client) addOperationDescribeVpcEndpointServicePermissionsMiddlewares(st
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeVpcEndpointServicePermissions"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -108,16 +97,7 @@ func (c *Client) addOperationDescribeVpcEndpointServicePermissionsMiddlewares(st
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -126,16 +106,13 @@ func (c *Client) addOperationDescribeVpcEndpointServicePermissionsMiddlewares(st
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpDescribeVpcEndpointServicePermissionsValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeVpcEndpointServicePermissions(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DescribeVpcEndpointServicePermissions"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -150,16 +127,11 @@ func (c *Client) addOperationDescribeVpcEndpointServicePermissionsMiddlewares(st
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
+	if err = addInterceptors(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
-
-// DescribeVpcEndpointServicePermissionsAPIClient is a client that implements the
-// DescribeVpcEndpointServicePermissions operation.
-type DescribeVpcEndpointServicePermissionsAPIClient interface {
-	DescribeVpcEndpointServicePermissions(context.Context, *DescribeVpcEndpointServicePermissionsInput, ...func(*Options)) (*DescribeVpcEndpointServicePermissionsOutput, error)
-}
-
-var _ DescribeVpcEndpointServicePermissionsAPIClient = (*Client)(nil)
 
 // DescribeVpcEndpointServicePermissionsPaginatorOptions is the paginator options
 // for DescribeVpcEndpointServicePermissions
@@ -230,6 +202,9 @@ func (p *DescribeVpcEndpointServicePermissionsPaginator) NextPage(ctx context.Co
 	}
 	params.MaxResults = limit
 
+	optFns = append([]func(*Options){
+		addIsPaginatorUserAgent,
+	}, optFns...)
 	result, err := p.client.DescribeVpcEndpointServicePermissions(ctx, &params, optFns...)
 	if err != nil {
 		return nil, err
@@ -249,10 +224,10 @@ func (p *DescribeVpcEndpointServicePermissionsPaginator) NextPage(ctx context.Co
 	return result, nil
 }
 
-func newServiceMetadataMiddleware_opDescribeVpcEndpointServicePermissions(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeVpcEndpointServicePermissions",
-	}
+// DescribeVpcEndpointServicePermissionsAPIClient is a client that implements the
+// DescribeVpcEndpointServicePermissions operation.
+type DescribeVpcEndpointServicePermissionsAPIClient interface {
+	DescribeVpcEndpointServicePermissions(context.Context, *DescribeVpcEndpointServicePermissionsInput, ...func(*Options)) (*DescribeVpcEndpointServicePermissionsOutput, error)
 }
+
+var _ DescribeVpcEndpointServicePermissionsAPIClient = (*Client)(nil)

@@ -5,7 +5,6 @@ package ec2
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -31,12 +30,14 @@ func (c *Client) DescribeMacHosts(ctx context.Context, params *DescribeMacHostsI
 type DescribeMacHostsInput struct {
 
 	// The filters.
+	//
 	//   - availability-zone - The Availability Zone of the EC2 Mac Dedicated Host.
+	//
 	//   - instance-type - The instance type size that the EC2 Mac Dedicated Host is
 	//   configured to support.
 	Filters []types.Filter
 
-	// The IDs of the EC2 Mac Dedicated Hosts.
+	//  The IDs of the EC2 Mac Dedicated Hosts.
 	HostIds []string
 
 	// The maximum number of results to return for the request in a single page. The
@@ -53,7 +54,7 @@ type DescribeMacHostsInput struct {
 
 type DescribeMacHostsOutput struct {
 
-	// Information about the EC2 Mac Dedicated Hosts.
+	//  Information about the EC2 Mac Dedicated Hosts.
 	MacHosts []types.MacHost
 
 	// The token to use to retrieve the next page of results.
@@ -66,9 +67,6 @@ type DescribeMacHostsOutput struct {
 }
 
 func (c *Client) addOperationDescribeMacHostsMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpDescribeMacHosts{}, middleware.After)
 	if err != nil {
 		return err
@@ -77,17 +75,8 @@ func (c *Client) addOperationDescribeMacHostsMiddlewares(stack *middleware.Stack
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeMacHosts"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -99,16 +88,7 @@ func (c *Client) addOperationDescribeMacHostsMiddlewares(stack *middleware.Stack
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -117,13 +97,10 @@ func (c *Client) addOperationDescribeMacHostsMiddlewares(stack *middleware.Stack
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeMacHosts(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DescribeMacHosts"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -138,16 +115,11 @@ func (c *Client) addOperationDescribeMacHostsMiddlewares(stack *middleware.Stack
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
+	if err = addInterceptors(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
-
-// DescribeMacHostsAPIClient is a client that implements the DescribeMacHosts
-// operation.
-type DescribeMacHostsAPIClient interface {
-	DescribeMacHosts(context.Context, *DescribeMacHostsInput, ...func(*Options)) (*DescribeMacHostsOutput, error)
-}
-
-var _ DescribeMacHostsAPIClient = (*Client)(nil)
 
 // DescribeMacHostsPaginatorOptions is the paginator options for DescribeMacHosts
 type DescribeMacHostsPaginatorOptions struct {
@@ -215,6 +187,9 @@ func (p *DescribeMacHostsPaginator) NextPage(ctx context.Context, optFns ...func
 	}
 	params.MaxResults = limit
 
+	optFns = append([]func(*Options){
+		addIsPaginatorUserAgent,
+	}, optFns...)
 	result, err := p.client.DescribeMacHosts(ctx, &params, optFns...)
 	if err != nil {
 		return nil, err
@@ -234,10 +209,10 @@ func (p *DescribeMacHostsPaginator) NextPage(ctx context.Context, optFns ...func
 	return result, nil
 }
 
-func newServiceMetadataMiddleware_opDescribeMacHosts(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeMacHosts",
-	}
+// DescribeMacHostsAPIClient is a client that implements the DescribeMacHosts
+// operation.
+type DescribeMacHostsAPIClient interface {
+	DescribeMacHosts(context.Context, *DescribeMacHostsInput, ...func(*Options)) (*DescribeMacHostsOutput, error)
 }
+
+var _ DescribeMacHostsAPIClient = (*Client)(nil)

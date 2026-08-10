@@ -4,20 +4,22 @@ package ec2
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Modifies a volume attribute. By default, all I/O operations for the volume are
-// suspended when the data on the volume is determined to be potentially
-// inconsistent, to prevent undetectable, latent data corruption. The I/O access to
-// the volume can be resumed by first enabling I/O access and then checking the
-// data consistency on your volume. You can change the default behavior to resume
-// I/O operations. We recommend that you change this only for boot volumes or for
-// volumes that are stateless or disposable.
+// Modifies a volume attribute.
+//
+// By default, all I/O operations for the volume are suspended when the data on
+// the volume is determined to be potentially inconsistent, to prevent
+// undetectable, latent data corruption. The I/O access to the volume can be
+// resumed by first enabling I/O access and then checking the data consistency on
+// your volume.
+//
+// You can change the default behavior to resume I/O operations. We recommend that
+// you change this only for boot volumes or for volumes that are stateless or
+// disposable.
 func (c *Client) ModifyVolumeAttribute(ctx context.Context, params *ModifyVolumeAttributeInput, optFns ...func(*Options)) (*ModifyVolumeAttributeOutput, error) {
 	if params == nil {
 		params = &ModifyVolumeAttributeInput{}
@@ -60,9 +62,6 @@ type ModifyVolumeAttributeOutput struct {
 }
 
 func (c *Client) addOperationModifyVolumeAttributeMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpModifyVolumeAttribute{}, middleware.After)
 	if err != nil {
 		return err
@@ -71,17 +70,8 @@ func (c *Client) addOperationModifyVolumeAttributeMiddlewares(stack *middleware.
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "ModifyVolumeAttribute"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -93,16 +83,7 @@ func (c *Client) addOperationModifyVolumeAttributeMiddlewares(stack *middleware.
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -111,16 +92,13 @@ func (c *Client) addOperationModifyVolumeAttributeMiddlewares(stack *middleware.
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpModifyVolumeAttributeValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opModifyVolumeAttribute(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "ModifyVolumeAttribute"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -135,13 +113,8 @@ func (c *Client) addOperationModifyVolumeAttributeMiddlewares(stack *middleware.
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opModifyVolumeAttribute(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "ModifyVolumeAttribute",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

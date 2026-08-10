@@ -2,13 +2,14 @@ package ingress
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	cmv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
 	"github.com/spf13/pflag"
 
 	"github.com/openshift/rosa/pkg/helper"
-	. "github.com/openshift/rosa/pkg/ingress"
+	pkgingress "github.com/openshift/rosa/pkg/ingress"
 )
 
 type stringTransformation func(source string) string
@@ -33,12 +34,24 @@ const (
 )
 
 var exclusivelyIngressV2Flags = []string{excludedNamespacesFlag, wildcardPolicyFlag,
-	namespaceOwnershipPolicyFlag, clusterRoutesHostnameFlag, clusterRoutesTlsSecretRefFlag, componentRoutesFlag}
+	namespaceOwnershipPolicyFlag, clusterRoutesHostnameFlag, clusterRoutesTlsSecretRefFlag}
 
 var expectedComponentRoutes = []string{
 	string(cmv1.ComponentRouteTypeOauth),
 	string(cmv1.ComponentRouteTypeConsole),
 	string(cmv1.ComponentRouteTypeDownloads),
+}
+
+var expectedHcpComponentRoutes = []string{
+	string(cmv1.ComponentRouteTypeConsole),
+	string(cmv1.ComponentRouteTypeDownloads),
+}
+
+func allowedComponentRoutes(isHypershift bool) []string {
+	if isHypershift {
+		return expectedHcpComponentRoutes
+	}
+	return expectedComponentRoutes
 }
 
 var expectedParameters = []string{
@@ -47,13 +60,7 @@ var expectedParameters = []string{
 }
 
 func IsIngressV2SetViaCLI(flags *pflag.FlagSet) bool {
-	for _, parameter := range exclusivelyIngressV2Flags {
-		if flags.Changed(parameter) {
-			return true
-		}
-	}
-
-	return false
+	return slices.ContainsFunc(exclusivelyIngressV2Flags, flags.Changed)
 }
 
 func addIngressV2Flags(flags *pflag.FlagSet) {
@@ -70,7 +77,7 @@ func addIngressV2Flags(flags *pflag.FlagSet) {
 		wildcardPolicyFlag,
 		"",
 		fmt.Sprintf("Wildcard Policy for ingress. Options are %s. Default is '%s'.",
-			strings.Join(ValidWildcardPolicies, ","), DefaultWildcardPolicy),
+			strings.Join(pkgingress.ValidWildcardPolicies, ","), pkgingress.DefaultWildcardPolicy),
 	)
 
 	flags.StringVar(
@@ -78,7 +85,7 @@ func addIngressV2Flags(flags *pflag.FlagSet) {
 		namespaceOwnershipPolicyFlag,
 		"",
 		fmt.Sprintf("Namespace Ownership Policy for ingress. Options are %s. Default is '%s'.",
-			strings.Join(ValidNamespaceOwnershipPolicies, ","), DefaultNamespaceOwnershipPolicy),
+			strings.Join(pkgingress.ValidNamespaceOwnershipPolicies, ","), pkgingress.DefaultNamespaceOwnershipPolicy),
 	)
 
 	flags.StringVar(
@@ -86,22 +93,22 @@ func addIngressV2Flags(flags *pflag.FlagSet) {
 		componentRoutesFlag,
 		"",
 		//nolint:lll
-		"Component routes settings. Available keys [oauth, console, downloads]. For each key a pair of hostname and tlsSecretRef is expected to be supplied. "+
-			"Format should be a comma separate list 'oauth: hostname=example-hostname;tlsSecretRef=example-secret-ref,downloads:...",
+		"Component route settings. Specify one or more routes to update; routes not specified remain unchanged. "+
+			"Available keys are [oauth, console, downloads] (HCP clusters support console and downloads only). "+
+			"Each route requires a hostname and tlsSecretRef. To clear a route, set both to empty values. "+
+			"Format: 'console: hostname=example-hostname;tlsSecretRef=example-secret-ref,downloads:...'",
 	)
 }
 
 func parseComponentRoutes(input string) (map[string]*cmv1.ComponentRouteBuilder, error) {
+	return parseComponentRoutesForAllowed(input, expectedComponentRoutes)
+}
+
+//nolint:lll
+func parseComponentRoutesForAllowed(input string, allowedRoutes []string) (map[string]*cmv1.ComponentRouteBuilder, error) {
 	result := map[string]*cmv1.ComponentRouteBuilder{}
 	input = strings.TrimSpace(input)
 	components := strings.Split(input, ",")
-	if len(components) != len(expectedComponentRoutes) {
-		return nil, fmt.Errorf(
-			"the expected amount of component routes is %d, but %d have been supplied",
-			len(expectedComponentRoutes),
-			len(components),
-		)
-	}
 	transformations := []stringTransformation{
 		func(source string) string {
 			return strings.TrimSpace(source)
@@ -120,11 +127,15 @@ func parseComponentRoutes(input string) (map[string]*cmv1.ComponentRouteBuilder,
 			)
 		}
 		componentName := strings.TrimSpace(parsedComponent[0])
-		if !helper.Contains(expectedComponentRoutes, componentName) {
+		if _, exists := result[componentName]; exists {
+			return nil, fmt.Errorf(
+				"component route %q was supplied more than once", componentName)
+		}
+		if !helper.Contains(allowedRoutes, componentName) {
 			return nil, fmt.Errorf(
 				"'%s' is not a valid component name. Expected include %s",
 				componentName,
-				helper.SliceToSortedString(expectedComponentRoutes),
+				helper.SliceToSortedString(allowedRoutes),
 			)
 		}
 		parameters := strings.TrimSpace(parsedComponent[1])
@@ -157,10 +168,10 @@ func parseComponentRoutes(input string) (map[string]*cmv1.ComponentRouteBuilder,
 			for _, t := range transformations {
 				parameterValue = t(parameterValue)
 			}
-			// TODO: use reflection, couldn't get it to work
-			if parameterName == hostnameParameter {
+			switch parameterName {
+			case hostnameParameter:
 				componentRouteBuilder.Hostname(parameterValue)
-			} else if parameterName == tlsSecretRefParameter {
+			case tlsSecretRefParameter:
 				componentRouteBuilder.TlsSecretRef(parameterValue)
 			}
 		}

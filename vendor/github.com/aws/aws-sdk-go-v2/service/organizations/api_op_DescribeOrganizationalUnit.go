@@ -4,16 +4,15 @@ package organizations
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Retrieves information about an organizational unit (OU). This operation can be
-// called only from the organization's management account or by a member account
-// that is a delegated administrator for an Amazon Web Services service.
+// Retrieves information about an organizational unit (OU).
+//
+// You can only call this operation from the management account or a member
+// account that is a delegated administrator.
 func (c *Client) DescribeOrganizationalUnit(ctx context.Context, params *DescribeOrganizationalUnitInput, optFns ...func(*Options)) (*DescribeOrganizationalUnitOutput, error) {
 	if params == nil {
 		params = &DescribeOrganizationalUnitInput{}
@@ -31,12 +30,15 @@ func (c *Client) DescribeOrganizationalUnit(ctx context.Context, params *Describ
 
 type DescribeOrganizationalUnitInput struct {
 
-	// The unique identifier (ID) of the organizational unit that you want details
-	// about. You can get the ID from the ListOrganizationalUnitsForParent operation.
-	// The regex pattern (http://wikipedia.org/wiki/regex) for an organizational unit
-	// ID string requires "ou-" followed by from 4 to 32 lowercase letters or digits
-	// (the ID of the root that contains the OU). This string is followed by a second
-	// "-" dash and from 8 to 32 additional lowercase letters or digits.
+	// ID for the organizational unit that you want details about. You can get the ID
+	// from the ListOrganizationalUnitsForParentoperation.
+	//
+	// The [regex pattern] for an organizational unit ID string requires "ou-" followed by from 4 to
+	// 32 lowercase letters or digits (the ID of the root that contains the OU). This
+	// string is followed by a second "-" dash and from 8 to 32 additional lowercase
+	// letters or digits.
+	//
+	// [regex pattern]: http://wikipedia.org/wiki/regex
 	//
 	// This member is required.
 	OrganizationalUnitId *string
@@ -56,9 +58,6 @@ type DescribeOrganizationalUnitOutput struct {
 }
 
 func (c *Client) addOperationDescribeOrganizationalUnitMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpDescribeOrganizationalUnit{}, middleware.After)
 	if err != nil {
 		return err
@@ -67,17 +66,8 @@ func (c *Client) addOperationDescribeOrganizationalUnitMiddlewares(stack *middle
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeOrganizationalUnit"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -89,16 +79,7 @@ func (c *Client) addOperationDescribeOrganizationalUnitMiddlewares(stack *middle
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -107,16 +88,13 @@ func (c *Client) addOperationDescribeOrganizationalUnitMiddlewares(stack *middle
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpDescribeOrganizationalUnitValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeOrganizationalUnit(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DescribeOrganizationalUnit"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -131,13 +109,8 @@ func (c *Client) addOperationDescribeOrganizationalUnitMiddlewares(stack *middle
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opDescribeOrganizationalUnit(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeOrganizationalUnit",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

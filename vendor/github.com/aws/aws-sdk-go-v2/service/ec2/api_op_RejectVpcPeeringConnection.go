@@ -4,17 +4,14 @@ package ec2
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // Rejects a VPC peering connection request. The VPC peering connection must be in
-// the pending-acceptance state. Use the DescribeVpcPeeringConnections request to
-// view your outstanding VPC peering connection requests. To delete an active VPC
-// peering connection, or to delete a VPC peering connection request that you
-// initiated, use DeleteVpcPeeringConnection .
+// the pending-acceptance state. Use the DescribeVpcPeeringConnections request to view your outstanding VPC
+// peering connection requests. To delete an active VPC peering connection, or to
+// delete a VPC peering connection request that you initiated, use DeleteVpcPeeringConnection.
 func (c *Client) RejectVpcPeeringConnection(ctx context.Context, params *RejectVpcPeeringConnectionInput, optFns ...func(*Options)) (*RejectVpcPeeringConnectionOutput, error) {
 	if params == nil {
 		params = &RejectVpcPeeringConnectionInput{}
@@ -58,9 +55,6 @@ type RejectVpcPeeringConnectionOutput struct {
 }
 
 func (c *Client) addOperationRejectVpcPeeringConnectionMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpRejectVpcPeeringConnection{}, middleware.After)
 	if err != nil {
 		return err
@@ -69,17 +63,8 @@ func (c *Client) addOperationRejectVpcPeeringConnectionMiddlewares(stack *middle
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "RejectVpcPeeringConnection"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -91,16 +76,7 @@ func (c *Client) addOperationRejectVpcPeeringConnectionMiddlewares(stack *middle
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -109,16 +85,13 @@ func (c *Client) addOperationRejectVpcPeeringConnectionMiddlewares(stack *middle
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpRejectVpcPeeringConnectionValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opRejectVpcPeeringConnection(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "RejectVpcPeeringConnection"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -133,13 +106,8 @@ func (c *Client) addOperationRejectVpcPeeringConnectionMiddlewares(stack *middle
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opRejectVpcPeeringConnection(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "RejectVpcPeeringConnection",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

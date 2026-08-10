@@ -4,14 +4,13 @@ package servicequotas
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/servicequotas/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Submits a quota increase request for the specified quota.
+// Submits a quota increase request for the specified quota at the account or
+// resource level.
 func (c *Client) RequestServiceQuotaIncrease(ctx context.Context, params *RequestServiceQuotaIncreaseInput, optFns ...func(*Options)) (*RequestServiceQuotaIncreaseOutput, error) {
 	if params == nil {
 		params = &RequestServiceQuotaIncreaseInput{}
@@ -35,22 +34,30 @@ type RequestServiceQuotaIncreaseInput struct {
 	DesiredValue *float64
 
 	// Specifies the quota identifier. To find the quota code for a specific quota,
-	// use the ListServiceQuotas operation, and look for the QuotaCode response in the
-	// output for the quota you want.
+	// use the ListServiceQuotasoperation, and look for the QuotaCode response in the output for the
+	// quota you want.
 	//
 	// This member is required.
 	QuotaCode *string
 
 	// Specifies the service identifier. To find the service code value for an Amazon
-	// Web Services service, use the ListServices operation.
+	// Web Services service, use the ListServicesoperation.
 	//
 	// This member is required.
 	ServiceCode *string
 
-	// Specifies the Amazon Web Services account or resource to which the quota
-	// applies. The value in this field depends on the context scope associated with
-	// the specified service quota.
+	// Specifies the resource with an Amazon Resource Name (ARN).
 	ContextId *string
+
+	// Specifies if an Amazon Web Services Support case can be opened for the quota
+	// increase request. This parameter is optional.
+	//
+	// By default, this flag is set to True and Amazon Web Services may create a
+	// support case for some quota increase requests. You can set this flag to False
+	// if you do not want a support case created when you request a quota increase. If
+	// you set the flag to False , Amazon Web Services does not open a support case and
+	// updates the request status to Not approved .
+	SupportCaseAllowed *bool
 
 	noSmithyDocumentSerde
 }
@@ -67,9 +74,6 @@ type RequestServiceQuotaIncreaseOutput struct {
 }
 
 func (c *Client) addOperationRequestServiceQuotaIncreaseMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpRequestServiceQuotaIncrease{}, middleware.After)
 	if err != nil {
 		return err
@@ -78,17 +82,8 @@ func (c *Client) addOperationRequestServiceQuotaIncreaseMiddlewares(stack *middl
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "RequestServiceQuotaIncrease"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -100,16 +95,7 @@ func (c *Client) addOperationRequestServiceQuotaIncreaseMiddlewares(stack *middl
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -118,16 +104,13 @@ func (c *Client) addOperationRequestServiceQuotaIncreaseMiddlewares(stack *middl
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpRequestServiceQuotaIncreaseValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opRequestServiceQuotaIncrease(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "RequestServiceQuotaIncrease"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -142,13 +125,8 @@ func (c *Client) addOperationRequestServiceQuotaIncreaseMiddlewares(stack *middl
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opRequestServiceQuotaIncrease(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "RequestServiceQuotaIncrease",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

@@ -5,7 +5,6 @@ package ec2
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -36,10 +35,14 @@ type DescribeLocalGatewayVirtualInterfaceGroupsInput struct {
 	DryRun *bool
 
 	// One or more filters.
+	//
 	//   - local-gateway-id - The ID of a local gateway.
+	//
 	//   - local-gateway-virtual-interface-group-id - The ID of the virtual interface
 	//   group.
+	//
 	//   - local-gateway-virtual-interface-id - The ID of the virtual interface.
+	//
 	//   - owner-id - The ID of the Amazon Web Services account that owns the local
 	//   gateway virtual interface group.
 	Filters []types.Filter
@@ -73,9 +76,6 @@ type DescribeLocalGatewayVirtualInterfaceGroupsOutput struct {
 }
 
 func (c *Client) addOperationDescribeLocalGatewayVirtualInterfaceGroupsMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpDescribeLocalGatewayVirtualInterfaceGroups{}, middleware.After)
 	if err != nil {
 		return err
@@ -84,17 +84,8 @@ func (c *Client) addOperationDescribeLocalGatewayVirtualInterfaceGroupsMiddlewar
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeLocalGatewayVirtualInterfaceGroups"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -106,16 +97,7 @@ func (c *Client) addOperationDescribeLocalGatewayVirtualInterfaceGroupsMiddlewar
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -124,13 +106,10 @@ func (c *Client) addOperationDescribeLocalGatewayVirtualInterfaceGroupsMiddlewar
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeLocalGatewayVirtualInterfaceGroups(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DescribeLocalGatewayVirtualInterfaceGroups"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -145,16 +124,11 @@ func (c *Client) addOperationDescribeLocalGatewayVirtualInterfaceGroupsMiddlewar
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
+	if err = addInterceptors(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
-
-// DescribeLocalGatewayVirtualInterfaceGroupsAPIClient is a client that implements
-// the DescribeLocalGatewayVirtualInterfaceGroups operation.
-type DescribeLocalGatewayVirtualInterfaceGroupsAPIClient interface {
-	DescribeLocalGatewayVirtualInterfaceGroups(context.Context, *DescribeLocalGatewayVirtualInterfaceGroupsInput, ...func(*Options)) (*DescribeLocalGatewayVirtualInterfaceGroupsOutput, error)
-}
-
-var _ DescribeLocalGatewayVirtualInterfaceGroupsAPIClient = (*Client)(nil)
 
 // DescribeLocalGatewayVirtualInterfaceGroupsPaginatorOptions is the paginator
 // options for DescribeLocalGatewayVirtualInterfaceGroups
@@ -223,6 +197,9 @@ func (p *DescribeLocalGatewayVirtualInterfaceGroupsPaginator) NextPage(ctx conte
 	}
 	params.MaxResults = limit
 
+	optFns = append([]func(*Options){
+		addIsPaginatorUserAgent,
+	}, optFns...)
 	result, err := p.client.DescribeLocalGatewayVirtualInterfaceGroups(ctx, &params, optFns...)
 	if err != nil {
 		return nil, err
@@ -242,10 +219,10 @@ func (p *DescribeLocalGatewayVirtualInterfaceGroupsPaginator) NextPage(ctx conte
 	return result, nil
 }
 
-func newServiceMetadataMiddleware_opDescribeLocalGatewayVirtualInterfaceGroups(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeLocalGatewayVirtualInterfaceGroups",
-	}
+// DescribeLocalGatewayVirtualInterfaceGroupsAPIClient is a client that implements
+// the DescribeLocalGatewayVirtualInterfaceGroups operation.
+type DescribeLocalGatewayVirtualInterfaceGroupsAPIClient interface {
+	DescribeLocalGatewayVirtualInterfaceGroups(context.Context, *DescribeLocalGatewayVirtualInterfaceGroupsInput, ...func(*Options)) (*DescribeLocalGatewayVirtualInterfaceGroupsOutput, error)
 }
+
+var _ DescribeLocalGatewayVirtualInterfaceGroupsAPIClient = (*Client)(nil)

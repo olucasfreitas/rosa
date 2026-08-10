@@ -5,7 +5,6 @@ package cloudwatchlogs
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -56,9 +55,6 @@ type DescribeDeliveryDestinationsOutput struct {
 }
 
 func (c *Client) addOperationDescribeDeliveryDestinationsMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpDescribeDeliveryDestinations{}, middleware.After)
 	if err != nil {
 		return err
@@ -67,17 +63,8 @@ func (c *Client) addOperationDescribeDeliveryDestinationsMiddlewares(stack *midd
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeDeliveryDestinations"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -89,16 +76,7 @@ func (c *Client) addOperationDescribeDeliveryDestinationsMiddlewares(stack *midd
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -107,13 +85,10 @@ func (c *Client) addOperationDescribeDeliveryDestinationsMiddlewares(stack *midd
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeDeliveryDestinations(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DescribeDeliveryDestinations"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -128,16 +103,11 @@ func (c *Client) addOperationDescribeDeliveryDestinationsMiddlewares(stack *midd
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
+	if err = addInterceptors(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
-
-// DescribeDeliveryDestinationsAPIClient is a client that implements the
-// DescribeDeliveryDestinations operation.
-type DescribeDeliveryDestinationsAPIClient interface {
-	DescribeDeliveryDestinations(context.Context, *DescribeDeliveryDestinationsInput, ...func(*Options)) (*DescribeDeliveryDestinationsOutput, error)
-}
-
-var _ DescribeDeliveryDestinationsAPIClient = (*Client)(nil)
 
 // DescribeDeliveryDestinationsPaginatorOptions is the paginator options for
 // DescribeDeliveryDestinations
@@ -206,6 +176,9 @@ func (p *DescribeDeliveryDestinationsPaginator) NextPage(ctx context.Context, op
 	}
 	params.Limit = limit
 
+	optFns = append([]func(*Options){
+		addIsPaginatorUserAgent,
+	}, optFns...)
 	result, err := p.client.DescribeDeliveryDestinations(ctx, &params, optFns...)
 	if err != nil {
 		return nil, err
@@ -225,10 +198,10 @@ func (p *DescribeDeliveryDestinationsPaginator) NextPage(ctx context.Context, op
 	return result, nil
 }
 
-func newServiceMetadataMiddleware_opDescribeDeliveryDestinations(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeDeliveryDestinations",
-	}
+// DescribeDeliveryDestinationsAPIClient is a client that implements the
+// DescribeDeliveryDestinations operation.
+type DescribeDeliveryDestinationsAPIClient interface {
+	DescribeDeliveryDestinations(context.Context, *DescribeDeliveryDestinationsInput, ...func(*Options)) (*DescribeDeliveryDestinationsOutput, error)
 }
+
+var _ DescribeDeliveryDestinationsAPIClient = (*Client)(nil)

@@ -4,8 +4,6 @@ package ec2
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -15,8 +13,10 @@ import (
 // Archives an Amazon EBS snapshot. When you archive a snapshot, it is converted
 // to a full snapshot that includes all of the blocks of data that were written to
 // the volume at the time the snapshot was created, and moved from the standard
-// tier to the archive tier. For more information, see Archive Amazon EBS snapshots (https://docs.aws.amazon.com/ebs/latest/userguide/snapshot-archive.html)
-// in the Amazon EBS User Guide.
+// tier to the archive tier. For more information, see [Archive Amazon EBS snapshots]in the Amazon EBS User
+// Guide.
+//
+// [Archive Amazon EBS snapshots]: https://docs.aws.amazon.com/ebs/latest/userguide/snapshot-archive.html
 func (c *Client) ModifySnapshotTier(ctx context.Context, params *ModifySnapshotTierInput, optFns ...func(*Options)) (*ModifySnapshotTierOutput, error) {
 	if params == nil {
 		params = &ModifySnapshotTierInput{}
@@ -66,9 +66,6 @@ type ModifySnapshotTierOutput struct {
 }
 
 func (c *Client) addOperationModifySnapshotTierMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpModifySnapshotTier{}, middleware.After)
 	if err != nil {
 		return err
@@ -77,17 +74,8 @@ func (c *Client) addOperationModifySnapshotTierMiddlewares(stack *middleware.Sta
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "ModifySnapshotTier"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -99,16 +87,7 @@ func (c *Client) addOperationModifySnapshotTierMiddlewares(stack *middleware.Sta
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -117,16 +96,13 @@ func (c *Client) addOperationModifySnapshotTierMiddlewares(stack *middleware.Sta
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpModifySnapshotTierValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opModifySnapshotTier(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "ModifySnapshotTier"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -141,13 +117,8 @@ func (c *Client) addOperationModifySnapshotTierMiddlewares(stack *middleware.Sta
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opModifySnapshotTier(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "ModifySnapshotTier",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

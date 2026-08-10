@@ -4,29 +4,35 @@ package ec2
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Removes the specified inbound (ingress) rules from a security group. You can
-// specify rules using either rule IDs or security group rule properties. If you
-// use rule properties, the values that you specify (for example, ports) must match
-// the existing rule's values exactly. Each rule has a protocol, from and to ports,
-// and source (CIDR range, security group, or prefix list). For the TCP and UDP
-// protocols, you must also specify the destination port or range of ports. For the
-// ICMP protocol, you must also specify the ICMP type and code. If the security
-// group rule has a description, you do not need to specify the description to
-// revoke the rule. For a default VPC, if the values you specify do not match the
-// existing rule's values, no error is returned, and the output describes the
-// security group rules that were not revoked. For a non-default VPC, if the values
-// you specify do not match the existing rule's values, an
-// InvalidPermission.NotFound client error is returned, and no rules are revoked.
+// Removes the specified inbound (ingress) rules from a security group.
+//
+// You can specify rules using either rule IDs or security group rule properties.
+// If you use rule properties, the values that you specify (for example, ports)
+// must match the existing rule's values exactly. Each rule has a protocol, from
+// and to ports, and source (CIDR range, security group, or prefix list). For the
+// TCP and UDP protocols, you must also specify the destination port or range of
+// ports. For the ICMP protocol, you must also specify the ICMP type and code. If
+// the security group rule has a description, you do not need to specify the
+// description to revoke the rule.
+//
+// For a default VPC, if the values you specify do not match the existing rule's
+// values, no error is returned, and the output describes the security group rules
+// that were not revoked.
+//
+// For a non-default VPC, if the values you specify do not match the existing
+// rule's values, an InvalidPermission.NotFound client error is returned, and no
+// rules are revoked.
+//
 // Amazon Web Services recommends that you describe the security group to verify
-// that the rules were removed. Rule changes are propagated to instances within the
-// security group as quickly as possible. However, a small delay might occur.
+// that the rules were removed.
+//
+// Rule changes are propagated to instances within the security group as quickly
+// as possible. However, a small delay might occur.
 func (c *Client) RevokeSecurityGroupIngress(ctx context.Context, params *RevokeSecurityGroupIngressInput, optFns ...func(*Options)) (*RevokeSecurityGroupIngressOutput, error) {
 	if params == nil {
 		params = &RevokeSecurityGroupIngressInput{}
@@ -70,8 +76,10 @@ type RevokeSecurityGroupIngressInput struct {
 	// CIDR IP address range in the same set of permissions.
 	IpPermissions []types.IpPermission
 
-	// The IP protocol name ( tcp , udp , icmp ) or number (see Protocol Numbers (http://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml)
-	// ). Use -1 to specify all.
+	// The IP protocol name ( tcp , udp , icmp ) or number (see [Protocol Numbers]). Use -1 to specify
+	// all.
+	//
+	// [Protocol Numbers]: http://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml
 	IpProtocol *string
 
 	// The IDs of the security group rules.
@@ -99,8 +107,12 @@ type RevokeSecurityGroupIngressOutput struct {
 	// Returns true if the request succeeds; otherwise, returns an error.
 	Return *bool
 
+	// Details about the revoked security group rules.
+	RevokedSecurityGroupRules []types.RevokedSecurityGroupRule
+
 	// The inbound rules that were unknown to the service. In some cases,
-	// unknownIpPermissionSet might be in a different format from the request parameter.
+	// unknownIpPermissionSet might be in a different format from the request
+	// parameter.
 	UnknownIpPermissions []types.IpPermission
 
 	// Metadata pertaining to the operation's result.
@@ -110,9 +122,6 @@ type RevokeSecurityGroupIngressOutput struct {
 }
 
 func (c *Client) addOperationRevokeSecurityGroupIngressMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpRevokeSecurityGroupIngress{}, middleware.After)
 	if err != nil {
 		return err
@@ -121,17 +130,8 @@ func (c *Client) addOperationRevokeSecurityGroupIngressMiddlewares(stack *middle
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "RevokeSecurityGroupIngress"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -143,16 +143,7 @@ func (c *Client) addOperationRevokeSecurityGroupIngressMiddlewares(stack *middle
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -161,13 +152,10 @@ func (c *Client) addOperationRevokeSecurityGroupIngressMiddlewares(stack *middle
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opRevokeSecurityGroupIngress(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "RevokeSecurityGroupIngress"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -182,13 +170,8 @@ func (c *Client) addOperationRevokeSecurityGroupIngressMiddlewares(stack *middle
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opRevokeSecurityGroupIngress(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "RevokeSecurityGroupIngress",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

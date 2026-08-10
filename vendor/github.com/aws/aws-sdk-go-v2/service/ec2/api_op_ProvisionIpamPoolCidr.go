@@ -5,7 +5,6 @@ package ec2
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -13,8 +12,11 @@ import (
 
 // Provision a CIDR to an IPAM pool. You can use this action to provision new
 // CIDRs to a top-level pool or to transfer a CIDR from a top-level pool to a pool
-// within it. For more information, see Provision CIDRs to pools (https://docs.aws.amazon.com/vpc/latest/ipam/prov-cidr-ipam.html)
-// in the Amazon VPC IPAM User Guide.
+// within it.
+//
+// For more information, see [Provision CIDRs to pools] in the Amazon VPC IPAM User Guide.
+//
+// [Provision CIDRs to pools]: https://docs.aws.amazon.com/vpc/latest/ipam/prov-cidr-ipam.html
 func (c *Client) ProvisionIpamPoolCidr(ctx context.Context, params *ProvisionIpamPoolCidrInput, optFns ...func(*Options)) (*ProvisionIpamPoolCidrOutput, error) {
 	if params == nil {
 		params = &ProvisionIpamPoolCidrInput{}
@@ -43,12 +45,14 @@ type ProvisionIpamPoolCidrInput struct {
 	Cidr *string
 
 	// A signed document that proves that you are authorized to bring a specified IP
-	// address range to Amazon using BYOIP. This option applies to public pools only.
+	// address range to Amazon using BYOIP. This option only applies to IPv4 and IPv6
+	// pools in the public scope.
 	CidrAuthorizationContext *types.IpamCidrAuthorizationContext
 
 	// A unique, case-sensitive identifier that you provide to ensure the idempotency
-	// of the request. For more information, see Ensuring Idempotency (https://docs.aws.amazon.com/AWSEC2/latest/APIReference/Run_Instance_Idempotency.html)
-	// .
+	// of the request. For more information, see [Ensuring idempotency].
+	//
+	// [Ensuring idempotency]: https://docs.aws.amazon.com/ec2/latest/devguide/ec2-api-idempotency.html
 	ClientToken *string
 
 	// A check for whether you have the required permissions for the action without
@@ -57,11 +61,20 @@ type ProvisionIpamPoolCidrInput struct {
 	// UnauthorizedOperation .
 	DryRun *bool
 
+	// Verification token ID. This option only applies to IPv4 and IPv6 pools in the
+	// public scope.
+	IpamExternalResourceVerificationTokenId *string
+
 	// The netmask length of the CIDR you'd like to provision to a pool. Can be used
 	// for provisioning Amazon-provided IPv6 CIDRs to top-level pools and for
 	// provisioning CIDRs to pools with source pools. Cannot be used to provision BYOIP
 	// CIDRs to top-level pools. Either "NetmaskLength" or "Cidr" is required.
 	NetmaskLength *int32
+
+	// The method for verifying control of a public IP address range. Defaults to
+	// remarks-x509 if not specified. This option only applies to IPv4 and IPv6 pools
+	// in the public scope.
+	VerificationMethod types.VerificationMethod
 
 	noSmithyDocumentSerde
 }
@@ -78,9 +91,6 @@ type ProvisionIpamPoolCidrOutput struct {
 }
 
 func (c *Client) addOperationProvisionIpamPoolCidrMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpProvisionIpamPoolCidr{}, middleware.After)
 	if err != nil {
 		return err
@@ -89,17 +99,8 @@ func (c *Client) addOperationProvisionIpamPoolCidrMiddlewares(stack *middleware.
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "ProvisionIpamPoolCidr"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -111,16 +112,7 @@ func (c *Client) addOperationProvisionIpamPoolCidrMiddlewares(stack *middleware.
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -129,7 +121,7 @@ func (c *Client) addOperationProvisionIpamPoolCidrMiddlewares(stack *middleware.
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addIdempotencyToken_opProvisionIpamPoolCidrMiddleware(stack, options); err != nil {
@@ -138,10 +130,7 @@ func (c *Client) addOperationProvisionIpamPoolCidrMiddlewares(stack *middleware.
 	if err = addOpProvisionIpamPoolCidrValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opProvisionIpamPoolCidr(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "ProvisionIpamPoolCidr"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -154,6 +143,9 @@ func (c *Client) addOperationProvisionIpamPoolCidrMiddlewares(stack *middleware.
 		return err
 	}
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil
@@ -190,12 +182,4 @@ func (m *idempotencyToken_initializeOpProvisionIpamPoolCidr) HandleInitialize(ct
 }
 func addIdempotencyToken_opProvisionIpamPoolCidrMiddleware(stack *middleware.Stack, cfg Options) error {
 	return stack.Initialize.Add(&idempotencyToken_initializeOpProvisionIpamPoolCidr{tokenProvider: cfg.IdempotencyTokenProvider}, middleware.Before)
-}
-
-func newServiceMetadataMiddleware_opProvisionIpamPoolCidr(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "ProvisionIpamPoolCidr",
-	}
 }

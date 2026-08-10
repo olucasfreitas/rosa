@@ -4,16 +4,17 @@ package ec2
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // Gets the current state of block public access for AMIs at the account level in
-// the specified Amazon Web Services Region. For more information, see Block
-// public access to your AMIs (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/sharingamis-intro.html#block-public-access-to-amis)
-// in the Amazon EC2 User Guide.
+// the specified Amazon Web Services Region.
+//
+// For more information, see [Block public access to your AMIs] in the Amazon EC2 User Guide.
+//
+// [Block public access to your AMIs]: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/block-public-access-to-amis.html
 func (c *Client) GetImageBlockPublicAccessState(ctx context.Context, params *GetImageBlockPublicAccessStateInput, optFns ...func(*Options)) (*GetImageBlockPublicAccessStateOutput, error) {
 	if params == nil {
 		params = &GetImageBlockPublicAccessStateInput{}
@@ -43,11 +44,24 @@ type GetImageBlockPublicAccessStateInput struct {
 type GetImageBlockPublicAccessStateOutput struct {
 
 	// The current state of block public access for AMIs at the account level in the
-	// specified Amazon Web Services Region. Possible values:
+	// specified Amazon Web Services Region.
+	//
+	// Possible values:
+	//
 	//   - block-new-sharing - Any attempt to publicly share your AMIs in the specified
 	//   Region is blocked.
+	//
 	//   - unblocked - Your AMIs in the specified Region can be publicly shared.
 	ImageBlockPublicAccessState *string
+
+	// The entity that manages the state for block public access for AMIs. Possible
+	// values include:
+	//
+	//   - account - The state is managed by the account.
+	//
+	//   - declarative-policy - The state is managed by a declarative policy and can't
+	//   be modified by the account.
+	ManagedBy types.ManagedBy
 
 	// Metadata pertaining to the operation's result.
 	ResultMetadata middleware.Metadata
@@ -56,9 +70,6 @@ type GetImageBlockPublicAccessStateOutput struct {
 }
 
 func (c *Client) addOperationGetImageBlockPublicAccessStateMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpGetImageBlockPublicAccessState{}, middleware.After)
 	if err != nil {
 		return err
@@ -67,17 +78,8 @@ func (c *Client) addOperationGetImageBlockPublicAccessStateMiddlewares(stack *mi
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "GetImageBlockPublicAccessState"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -89,16 +91,7 @@ func (c *Client) addOperationGetImageBlockPublicAccessStateMiddlewares(stack *mi
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -107,13 +100,10 @@ func (c *Client) addOperationGetImageBlockPublicAccessStateMiddlewares(stack *mi
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opGetImageBlockPublicAccessState(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "GetImageBlockPublicAccessState"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -128,13 +118,8 @@ func (c *Client) addOperationGetImageBlockPublicAccessStateMiddlewares(stack *mi
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opGetImageBlockPublicAccessState(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "GetImageBlockPublicAccessState",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

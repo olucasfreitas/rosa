@@ -4,16 +4,15 @@ package servicequotas
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/servicequotas/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Retrieves the applied quota value for the specified quota. For some quotas,
-// only the default values are available. If the applied quota value is not
-// available for a quota, the quota is not retrieved.
+// Retrieves the applied quota value for the specified account-level or
+// resource-level quota. For some quotas, only the default values are available. If
+// the applied quota value is not available for a quota, the quota is not
+// retrieved.
 func (c *Client) GetServiceQuota(ctx context.Context, params *GetServiceQuotaInput, optFns ...func(*Options)) (*GetServiceQuotaOutput, error) {
 	if params == nil {
 		params = &GetServiceQuotaInput{}
@@ -32,21 +31,19 @@ func (c *Client) GetServiceQuota(ctx context.Context, params *GetServiceQuotaInp
 type GetServiceQuotaInput struct {
 
 	// Specifies the quota identifier. To find the quota code for a specific quota,
-	// use the ListServiceQuotas operation, and look for the QuotaCode response in the
-	// output for the quota you want.
+	// use the ListServiceQuotasoperation, and look for the QuotaCode response in the output for the
+	// quota you want.
 	//
 	// This member is required.
 	QuotaCode *string
 
 	// Specifies the service identifier. To find the service code value for an Amazon
-	// Web Services service, use the ListServices operation.
+	// Web Services service, use the ListServicesoperation.
 	//
 	// This member is required.
 	ServiceCode *string
 
-	// Specifies the Amazon Web Services account or resource to which the quota
-	// applies. The value in this field depends on the context scope associated with
-	// the specified service quota.
+	// Specifies the resource with an Amazon Resource Name (ARN).
 	ContextId *string
 
 	noSmithyDocumentSerde
@@ -64,9 +61,6 @@ type GetServiceQuotaOutput struct {
 }
 
 func (c *Client) addOperationGetServiceQuotaMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpGetServiceQuota{}, middleware.After)
 	if err != nil {
 		return err
@@ -75,17 +69,8 @@ func (c *Client) addOperationGetServiceQuotaMiddlewares(stack *middleware.Stack,
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "GetServiceQuota"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -97,16 +82,7 @@ func (c *Client) addOperationGetServiceQuotaMiddlewares(stack *middleware.Stack,
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -115,16 +91,13 @@ func (c *Client) addOperationGetServiceQuotaMiddlewares(stack *middleware.Stack,
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpGetServiceQuotaValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opGetServiceQuota(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "GetServiceQuota"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -139,13 +112,8 @@ func (c *Client) addOperationGetServiceQuotaMiddlewares(stack *middleware.Stack,
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opGetServiceQuota(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "GetServiceQuota",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

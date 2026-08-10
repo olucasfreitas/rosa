@@ -5,12 +5,13 @@
     ":gitSignOff"
   ],
   "enabledManagers": [
+    "custom.regex",
     "gomod",
     "tekton",
     "dockerfile"
   ],
   "commitMessagePrefix": "OCM-00000 | ci: ",
-  "prConcurrentLimit": 2,
+  "prConcurrentLimit": 10,
   "prHourlyLimit": 0,
   "dependencyDashboard": true,
   "minimumReleaseAge": "3 days",
@@ -25,17 +26,23 @@
       "at any time"
     ]
   },
+  "dockerfile": {
+    "managerFilePatterns": [
+      "/^Dockerfile$/",
+      "/^Dockerfile\\.clients$/",
+      "/^images/Dockerfile\\.e2e$/",
+      "/^images/Dockerfile\\.release$/",
+      "/^images/Dockerfile\\.konflux$/"
+    ]
+  },
   "gomod": {
     "constraints": {
-      "go": "1.25.8"
+      "go": "1.26.3"
     },
     "managerFilePatterns": [
       "/(^|/)\\.bingo/[^/]+\\.mod$/"
     ],
-    "postUpdateOptions": [
-      "gomodUpdateImportPaths",
-      "gomodTidy"
-    ],
+    "postUpdateOptions": ["gomodUpdateImportPaths"],
     "packageRules": [
       {
         "matchManagers": [
@@ -48,7 +55,32 @@
       }
     ]
   },
+  "customManagers": [
+    {
+      "description": "Update jq bootstrap in hack/govulncheck.sh",
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^hack/govulncheck\\.sh$/"
+      ],
+      "matchStrings": [
+        "# renovate: datasource=(?<datasource>github-releases) depName=(?<depName>jqlang/jq)(?: extractVersion=(?<extractVersion>[^\\s]+))?\\s+readonly jq_version=\"(?<currentValue>[^\"]+)\""
+      ],
+      "datasourceTemplate": "{{datasource}}",
+      "depNameTemplate": "{{depName}}",
+      "extractVersionTemplate": "{{extractVersion}}"
+    }
+  ],
   "packageRules": [
+    {
+      "description": "govulncheck jq bootstrap",
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchDepNames": [
+        "jqlang/jq"
+      ],
+      "groupName": "govulncheck-jq"
+    },
     {
       "description": "Enable automerge Konflux .tekton task updates",
       "matchManagers": [
@@ -127,16 +159,6 @@
         "k8s.io/{/,}**",
         "sigs.k8s.io/{/,}**"
       ]
-    },
-    {
-      "description": "Pin k8s.io/apimachinery below the Go 1.26-only line",
-      "matchManagers": [
-        "gomod"
-      ],
-      "matchPackageNames": [
-        "k8s.io/apimachinery"
-      ],
-      "allowedVersions": "< 0.36.0"
     },
     {
       "description": "Test and generator stack",

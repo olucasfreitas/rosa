@@ -5,7 +5,6 @@ package ec2
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -39,7 +38,9 @@ type DescribeTrunkInterfaceAssociationsInput struct {
 	DryRun *bool
 
 	// One or more filters.
+	//
 	//   - gre-key - The ID of a trunk interface association.
+	//
 	//   - interface-protocol - The interface protocol. Valid values are VLAN and GRE .
 	Filters []types.Filter
 
@@ -69,9 +70,6 @@ type DescribeTrunkInterfaceAssociationsOutput struct {
 }
 
 func (c *Client) addOperationDescribeTrunkInterfaceAssociationsMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpDescribeTrunkInterfaceAssociations{}, middleware.After)
 	if err != nil {
 		return err
@@ -80,17 +78,8 @@ func (c *Client) addOperationDescribeTrunkInterfaceAssociationsMiddlewares(stack
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeTrunkInterfaceAssociations"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -102,16 +91,7 @@ func (c *Client) addOperationDescribeTrunkInterfaceAssociationsMiddlewares(stack
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -120,13 +100,10 @@ func (c *Client) addOperationDescribeTrunkInterfaceAssociationsMiddlewares(stack
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeTrunkInterfaceAssociations(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DescribeTrunkInterfaceAssociations"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -141,16 +118,11 @@ func (c *Client) addOperationDescribeTrunkInterfaceAssociationsMiddlewares(stack
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
+	if err = addInterceptors(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
-
-// DescribeTrunkInterfaceAssociationsAPIClient is a client that implements the
-// DescribeTrunkInterfaceAssociations operation.
-type DescribeTrunkInterfaceAssociationsAPIClient interface {
-	DescribeTrunkInterfaceAssociations(context.Context, *DescribeTrunkInterfaceAssociationsInput, ...func(*Options)) (*DescribeTrunkInterfaceAssociationsOutput, error)
-}
-
-var _ DescribeTrunkInterfaceAssociationsAPIClient = (*Client)(nil)
 
 // DescribeTrunkInterfaceAssociationsPaginatorOptions is the paginator options for
 // DescribeTrunkInterfaceAssociations
@@ -219,6 +191,9 @@ func (p *DescribeTrunkInterfaceAssociationsPaginator) NextPage(ctx context.Conte
 	}
 	params.MaxResults = limit
 
+	optFns = append([]func(*Options){
+		addIsPaginatorUserAgent,
+	}, optFns...)
 	result, err := p.client.DescribeTrunkInterfaceAssociations(ctx, &params, optFns...)
 	if err != nil {
 		return nil, err
@@ -238,10 +213,10 @@ func (p *DescribeTrunkInterfaceAssociationsPaginator) NextPage(ctx context.Conte
 	return result, nil
 }
 
-func newServiceMetadataMiddleware_opDescribeTrunkInterfaceAssociations(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeTrunkInterfaceAssociations",
-	}
+// DescribeTrunkInterfaceAssociationsAPIClient is a client that implements the
+// DescribeTrunkInterfaceAssociations operation.
+type DescribeTrunkInterfaceAssociationsAPIClient interface {
+	DescribeTrunkInterfaceAssociations(context.Context, *DescribeTrunkInterfaceAssociationsInput, ...func(*Options)) (*DescribeTrunkInterfaceAssociationsOutput, error)
 }
+
+var _ DescribeTrunkInterfaceAssociationsAPIClient = (*Client)(nil)

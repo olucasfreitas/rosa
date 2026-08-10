@@ -4,8 +4,6 @@ package organizations
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
@@ -13,6 +11,11 @@ import (
 // Deletes the organization. You can delete an organization only by using
 // credentials from the management account. The organization must be empty of
 // member accounts.
+//
+// When an organization is deleted, Organizations logs a membership event in
+// CloudTrail. The event is an AccountDepartedOrganization event with
+// departedMethod:Left and departedTime . This event is available only in the
+// management account's event history.
 func (c *Client) DeleteOrganization(ctx context.Context, params *DeleteOrganizationInput, optFns ...func(*Options)) (*DeleteOrganizationOutput, error) {
 	if params == nil {
 		params = &DeleteOrganizationInput{}
@@ -40,9 +43,6 @@ type DeleteOrganizationOutput struct {
 }
 
 func (c *Client) addOperationDeleteOrganizationMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpDeleteOrganization{}, middleware.After)
 	if err != nil {
 		return err
@@ -51,17 +51,8 @@ func (c *Client) addOperationDeleteOrganizationMiddlewares(stack *middleware.Sta
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DeleteOrganization"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -73,16 +64,7 @@ func (c *Client) addOperationDeleteOrganizationMiddlewares(stack *middleware.Sta
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -91,13 +73,10 @@ func (c *Client) addOperationDeleteOrganizationMiddlewares(stack *middleware.Sta
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDeleteOrganization(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DeleteOrganization"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -112,13 +91,8 @@ func (c *Client) addOperationDeleteOrganizationMiddlewares(stack *middleware.Sta
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opDeleteOrganization(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DeleteOrganization",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

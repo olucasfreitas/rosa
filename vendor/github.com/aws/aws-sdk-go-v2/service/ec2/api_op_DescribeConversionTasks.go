@@ -5,21 +5,21 @@ package ec2
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithytime "github.com/aws/smithy-go/time"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 	smithywaiter "github.com/aws/smithy-go/waiter"
-	"github.com/jmespath/go-jmespath"
 	"time"
 )
 
 // Describes the specified conversion tasks or all your conversion tasks. For more
-// information, see the VM Import/Export User Guide (https://docs.aws.amazon.com/vm-import/latest/userguide/)
-// . For information about the import manifest referenced by this API action, see
-// VM Import Manifest (https://docs.aws.amazon.com/AWSEC2/latest/APIReference/manifest.html)
-// .
+// information, see the [VM Import/Export User Guide].
+//
+// For information about the import manifest referenced by this API action, see [VM Import Manifest].
+//
+// [VM Import Manifest]: https://docs.aws.amazon.com/AWSEC2/latest/APIReference/manifest.html
+// [VM Import/Export User Guide]: https://docs.aws.amazon.com/vm-import/latest/userguide/
 func (c *Client) DescribeConversionTasks(ctx context.Context, params *DescribeConversionTasksInput, optFns ...func(*Options)) (*DescribeConversionTasksOutput, error) {
 	if params == nil {
 		params = &DescribeConversionTasksInput{}
@@ -61,9 +61,6 @@ type DescribeConversionTasksOutput struct {
 }
 
 func (c *Client) addOperationDescribeConversionTasksMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpDescribeConversionTasks{}, middleware.After)
 	if err != nil {
 		return err
@@ -72,17 +69,8 @@ func (c *Client) addOperationDescribeConversionTasksMiddlewares(stack *middlewar
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeConversionTasks"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -94,16 +82,7 @@ func (c *Client) addOperationDescribeConversionTasksMiddlewares(stack *middlewar
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -112,13 +91,10 @@ func (c *Client) addOperationDescribeConversionTasksMiddlewares(stack *middlewar
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeConversionTasks(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DescribeConversionTasks"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -133,16 +109,11 @@ func (c *Client) addOperationDescribeConversionTasksMiddlewares(stack *middlewar
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
+	if err = addInterceptors(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
-
-// DescribeConversionTasksAPIClient is a client that implements the
-// DescribeConversionTasks operation.
-type DescribeConversionTasksAPIClient interface {
-	DescribeConversionTasks(context.Context, *DescribeConversionTasksInput, ...func(*Options)) (*DescribeConversionTasksOutput, error)
-}
-
-var _ DescribeConversionTasksAPIClient = (*Client)(nil)
 
 // ConversionTaskCancelledWaiterOptions are waiter options for
 // ConversionTaskCancelledWaiter
@@ -178,12 +149,13 @@ type ConversionTaskCancelledWaiterOptions struct {
 
 	// Retryable is function that can be used to override the service defined
 	// waiter-behavior based on operation output, or returned error. This function is
-	// used by the waiter to decide if a state is retryable or a terminal state. By
-	// default service-modeled logic will populate this option. This option can thus be
-	// used to define a custom waiter state with fall-back to service-modeled waiter
-	// state mutators.The function returns an error in case of a failure state. In case
-	// of retry state, this function returns a bool value of true and nil error, while
-	// in case of success it returns a bool value of false and nil error.
+	// used by the waiter to decide if a state is retryable or a terminal state.
+	//
+	// By default service-modeled logic will populate this option. This option can
+	// thus be used to define a custom waiter state with fall-back to service-modeled
+	// waiter state mutators.The function returns an error in case of a failure state.
+	// In case of retry state, this function returns a bool value of true and nil
+	// error, while in case of success it returns a bool value of false and nil error.
 	Retryable func(context.Context, *DescribeConversionTasksInput, *DescribeConversionTasksOutput, error) (bool, error)
 }
 
@@ -260,7 +232,13 @@ func (w *ConversionTaskCancelledWaiter) WaitForOutput(ctx context.Context, param
 		}
 
 		out, err := w.client.DescribeConversionTasks(ctx, params, func(o *Options) {
+			baseOpts := []func(*Options){
+				addIsWaiterUserAgent,
+			}
 			o.APIOptions = append(o.APIOptions, apiOptions...)
+			for _, opt := range baseOpts {
+				opt(o)
+			}
 			for _, opt := range options.ClientOptions {
 				opt(o)
 			}
@@ -299,29 +277,18 @@ func (w *ConversionTaskCancelledWaiter) WaitForOutput(ctx context.Context, param
 func conversionTaskCancelledStateRetryable(ctx context.Context, input *DescribeConversionTasksInput, output *DescribeConversionTasksOutput, err error) (bool, error) {
 
 	if err == nil {
-		pathValue, err := jmespath.Search("ConversionTasks[].State", output)
-		if err != nil {
-			return false, fmt.Errorf("error evaluating waiter state: %w", err)
+		v1 := output.ConversionTasks
+		var v2 []types.ConversionTaskState
+		for _, v := range v1 {
+			v3 := v.State
+			v2 = append(v2, v3)
 		}
-
 		expectedValue := "cancelled"
-		var match = true
-		listOfValues, ok := pathValue.([]interface{})
-		if !ok {
-			return false, fmt.Errorf("waiter comparator expected list got %T", pathValue)
-		}
-
-		if len(listOfValues) == 0 {
-			match = false
-		}
-		for _, v := range listOfValues {
-			value, ok := v.(types.ConversionTaskState)
-			if !ok {
-				return false, fmt.Errorf("waiter comparator expected types.ConversionTaskState value, got %T", pathValue)
-			}
-
-			if string(value) != expectedValue {
+		match := len(v2) > 0
+		for _, v := range v2 {
+			if string(v) != expectedValue {
 				match = false
+				break
 			}
 		}
 
@@ -330,6 +297,9 @@ func conversionTaskCancelledStateRetryable(ctx context.Context, input *DescribeC
 		}
 	}
 
+	if err != nil {
+		return false, err
+	}
 	return true, nil
 }
 
@@ -367,12 +337,13 @@ type ConversionTaskCompletedWaiterOptions struct {
 
 	// Retryable is function that can be used to override the service defined
 	// waiter-behavior based on operation output, or returned error. This function is
-	// used by the waiter to decide if a state is retryable or a terminal state. By
-	// default service-modeled logic will populate this option. This option can thus be
-	// used to define a custom waiter state with fall-back to service-modeled waiter
-	// state mutators.The function returns an error in case of a failure state. In case
-	// of retry state, this function returns a bool value of true and nil error, while
-	// in case of success it returns a bool value of false and nil error.
+	// used by the waiter to decide if a state is retryable or a terminal state.
+	//
+	// By default service-modeled logic will populate this option. This option can
+	// thus be used to define a custom waiter state with fall-back to service-modeled
+	// waiter state mutators.The function returns an error in case of a failure state.
+	// In case of retry state, this function returns a bool value of true and nil
+	// error, while in case of success it returns a bool value of false and nil error.
 	Retryable func(context.Context, *DescribeConversionTasksInput, *DescribeConversionTasksOutput, error) (bool, error)
 }
 
@@ -449,7 +420,13 @@ func (w *ConversionTaskCompletedWaiter) WaitForOutput(ctx context.Context, param
 		}
 
 		out, err := w.client.DescribeConversionTasks(ctx, params, func(o *Options) {
+			baseOpts := []func(*Options){
+				addIsWaiterUserAgent,
+			}
 			o.APIOptions = append(o.APIOptions, apiOptions...)
+			for _, opt := range baseOpts {
+				opt(o)
+			}
 			for _, opt := range options.ClientOptions {
 				opt(o)
 			}
@@ -488,29 +465,18 @@ func (w *ConversionTaskCompletedWaiter) WaitForOutput(ctx context.Context, param
 func conversionTaskCompletedStateRetryable(ctx context.Context, input *DescribeConversionTasksInput, output *DescribeConversionTasksOutput, err error) (bool, error) {
 
 	if err == nil {
-		pathValue, err := jmespath.Search("ConversionTasks[].State", output)
-		if err != nil {
-			return false, fmt.Errorf("error evaluating waiter state: %w", err)
+		v1 := output.ConversionTasks
+		var v2 []types.ConversionTaskState
+		for _, v := range v1 {
+			v3 := v.State
+			v2 = append(v2, v3)
 		}
-
 		expectedValue := "completed"
-		var match = true
-		listOfValues, ok := pathValue.([]interface{})
-		if !ok {
-			return false, fmt.Errorf("waiter comparator expected list got %T", pathValue)
-		}
-
-		if len(listOfValues) == 0 {
-			match = false
-		}
-		for _, v := range listOfValues {
-			value, ok := v.(types.ConversionTaskState)
-			if !ok {
-				return false, fmt.Errorf("waiter comparator expected types.ConversionTaskState value, got %T", pathValue)
-			}
-
-			if string(value) != expectedValue {
+		match := len(v2) > 0
+		for _, v := range v2 {
+			if string(v) != expectedValue {
 				match = false
+				break
 			}
 		}
 
@@ -520,53 +486,50 @@ func conversionTaskCompletedStateRetryable(ctx context.Context, input *DescribeC
 	}
 
 	if err == nil {
-		pathValue, err := jmespath.Search("ConversionTasks[].State", output)
-		if err != nil {
-			return false, fmt.Errorf("error evaluating waiter state: %w", err)
+		v1 := output.ConversionTasks
+		var v2 []types.ConversionTaskState
+		for _, v := range v1 {
+			v3 := v.State
+			v2 = append(v2, v3)
 		}
-
 		expectedValue := "cancelled"
-		listOfValues, ok := pathValue.([]interface{})
-		if !ok {
-			return false, fmt.Errorf("waiter comparator expected list got %T", pathValue)
+		var match bool
+		for _, v := range v2 {
+			if string(v) == expectedValue {
+				match = true
+				break
+			}
 		}
 
-		for _, v := range listOfValues {
-			value, ok := v.(types.ConversionTaskState)
-			if !ok {
-				return false, fmt.Errorf("waiter comparator expected types.ConversionTaskState value, got %T", pathValue)
-			}
-
-			if string(value) == expectedValue {
-				return false, fmt.Errorf("waiter state transitioned to Failure")
-			}
+		if match {
+			return false, fmt.Errorf("waiter state transitioned to Failure")
 		}
 	}
 
 	if err == nil {
-		pathValue, err := jmespath.Search("ConversionTasks[].State", output)
-		if err != nil {
-			return false, fmt.Errorf("error evaluating waiter state: %w", err)
+		v1 := output.ConversionTasks
+		var v2 []types.ConversionTaskState
+		for _, v := range v1 {
+			v3 := v.State
+			v2 = append(v2, v3)
 		}
-
 		expectedValue := "cancelling"
-		listOfValues, ok := pathValue.([]interface{})
-		if !ok {
-			return false, fmt.Errorf("waiter comparator expected list got %T", pathValue)
+		var match bool
+		for _, v := range v2 {
+			if string(v) == expectedValue {
+				match = true
+				break
+			}
 		}
 
-		for _, v := range listOfValues {
-			value, ok := v.(types.ConversionTaskState)
-			if !ok {
-				return false, fmt.Errorf("waiter comparator expected types.ConversionTaskState value, got %T", pathValue)
-			}
-
-			if string(value) == expectedValue {
-				return false, fmt.Errorf("waiter state transitioned to Failure")
-			}
+		if match {
+			return false, fmt.Errorf("waiter state transitioned to Failure")
 		}
 	}
 
+	if err != nil {
+		return false, err
+	}
 	return true, nil
 }
 
@@ -604,12 +567,13 @@ type ConversionTaskDeletedWaiterOptions struct {
 
 	// Retryable is function that can be used to override the service defined
 	// waiter-behavior based on operation output, or returned error. This function is
-	// used by the waiter to decide if a state is retryable or a terminal state. By
-	// default service-modeled logic will populate this option. This option can thus be
-	// used to define a custom waiter state with fall-back to service-modeled waiter
-	// state mutators.The function returns an error in case of a failure state. In case
-	// of retry state, this function returns a bool value of true and nil error, while
-	// in case of success it returns a bool value of false and nil error.
+	// used by the waiter to decide if a state is retryable or a terminal state.
+	//
+	// By default service-modeled logic will populate this option. This option can
+	// thus be used to define a custom waiter state with fall-back to service-modeled
+	// waiter state mutators.The function returns an error in case of a failure state.
+	// In case of retry state, this function returns a bool value of true and nil
+	// error, while in case of success it returns a bool value of false and nil error.
 	Retryable func(context.Context, *DescribeConversionTasksInput, *DescribeConversionTasksOutput, error) (bool, error)
 }
 
@@ -686,7 +650,13 @@ func (w *ConversionTaskDeletedWaiter) WaitForOutput(ctx context.Context, params 
 		}
 
 		out, err := w.client.DescribeConversionTasks(ctx, params, func(o *Options) {
+			baseOpts := []func(*Options){
+				addIsWaiterUserAgent,
+			}
 			o.APIOptions = append(o.APIOptions, apiOptions...)
+			for _, opt := range baseOpts {
+				opt(o)
+			}
 			for _, opt := range options.ClientOptions {
 				opt(o)
 			}
@@ -725,29 +695,18 @@ func (w *ConversionTaskDeletedWaiter) WaitForOutput(ctx context.Context, params 
 func conversionTaskDeletedStateRetryable(ctx context.Context, input *DescribeConversionTasksInput, output *DescribeConversionTasksOutput, err error) (bool, error) {
 
 	if err == nil {
-		pathValue, err := jmespath.Search("ConversionTasks[].State", output)
-		if err != nil {
-			return false, fmt.Errorf("error evaluating waiter state: %w", err)
+		v1 := output.ConversionTasks
+		var v2 []types.ConversionTaskState
+		for _, v := range v1 {
+			v3 := v.State
+			v2 = append(v2, v3)
 		}
-
 		expectedValue := "deleted"
-		var match = true
-		listOfValues, ok := pathValue.([]interface{})
-		if !ok {
-			return false, fmt.Errorf("waiter comparator expected list got %T", pathValue)
-		}
-
-		if len(listOfValues) == 0 {
-			match = false
-		}
-		for _, v := range listOfValues {
-			value, ok := v.(types.ConversionTaskState)
-			if !ok {
-				return false, fmt.Errorf("waiter comparator expected types.ConversionTaskState value, got %T", pathValue)
-			}
-
-			if string(value) != expectedValue {
+		match := len(v2) > 0
+		for _, v := range v2 {
+			if string(v) != expectedValue {
 				match = false
+				break
 			}
 		}
 
@@ -756,13 +715,16 @@ func conversionTaskDeletedStateRetryable(ctx context.Context, input *DescribeCon
 		}
 	}
 
+	if err != nil {
+		return false, err
+	}
 	return true, nil
 }
 
-func newServiceMetadataMiddleware_opDescribeConversionTasks(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeConversionTasks",
-	}
+// DescribeConversionTasksAPIClient is a client that implements the
+// DescribeConversionTasks operation.
+type DescribeConversionTasksAPIClient interface {
+	DescribeConversionTasks(context.Context, *DescribeConversionTasksInput, ...func(*Options)) (*DescribeConversionTasksOutput, error)
 }
+
+var _ DescribeConversionTasksAPIClient = (*Client)(nil)

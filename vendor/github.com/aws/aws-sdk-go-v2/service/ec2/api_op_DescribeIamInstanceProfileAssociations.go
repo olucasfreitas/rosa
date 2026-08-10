@@ -5,7 +5,6 @@ package ec2
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -33,15 +32,18 @@ type DescribeIamInstanceProfileAssociationsInput struct {
 	AssociationIds []string
 
 	// The filters.
+	//
 	//   - instance-id - The ID of the instance.
+	//
 	//   - state - The state of the association ( associating | associated |
 	//   disassociating ).
 	Filters []types.Filter
 
 	// The maximum number of items to return for this request. To get the next page of
 	// items, make another request with the token returned in the output. For more
-	// information, see Pagination (https://docs.aws.amazon.com/AWSEC2/latest/APIReference/Query-Requests.html#api-pagination)
-	// .
+	// information, see [Pagination].
+	//
+	// [Pagination]: https://docs.aws.amazon.com/AWSEC2/latest/APIReference/Query-Requests.html#api-pagination
 	MaxResults *int32
 
 	// The token returned from a previous paginated request. Pagination continues from
@@ -67,9 +69,6 @@ type DescribeIamInstanceProfileAssociationsOutput struct {
 }
 
 func (c *Client) addOperationDescribeIamInstanceProfileAssociationsMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpDescribeIamInstanceProfileAssociations{}, middleware.After)
 	if err != nil {
 		return err
@@ -78,17 +77,8 @@ func (c *Client) addOperationDescribeIamInstanceProfileAssociationsMiddlewares(s
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeIamInstanceProfileAssociations"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -100,16 +90,7 @@ func (c *Client) addOperationDescribeIamInstanceProfileAssociationsMiddlewares(s
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -118,13 +99,10 @@ func (c *Client) addOperationDescribeIamInstanceProfileAssociationsMiddlewares(s
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeIamInstanceProfileAssociations(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DescribeIamInstanceProfileAssociations"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -139,24 +117,20 @@ func (c *Client) addOperationDescribeIamInstanceProfileAssociationsMiddlewares(s
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
+	if err = addInterceptors(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
-
-// DescribeIamInstanceProfileAssociationsAPIClient is a client that implements the
-// DescribeIamInstanceProfileAssociations operation.
-type DescribeIamInstanceProfileAssociationsAPIClient interface {
-	DescribeIamInstanceProfileAssociations(context.Context, *DescribeIamInstanceProfileAssociationsInput, ...func(*Options)) (*DescribeIamInstanceProfileAssociationsOutput, error)
-}
-
-var _ DescribeIamInstanceProfileAssociationsAPIClient = (*Client)(nil)
 
 // DescribeIamInstanceProfileAssociationsPaginatorOptions is the paginator options
 // for DescribeIamInstanceProfileAssociations
 type DescribeIamInstanceProfileAssociationsPaginatorOptions struct {
 	// The maximum number of items to return for this request. To get the next page of
 	// items, make another request with the token returned in the output. For more
-	// information, see Pagination (https://docs.aws.amazon.com/AWSEC2/latest/APIReference/Query-Requests.html#api-pagination)
-	// .
+	// information, see [Pagination].
+	//
+	// [Pagination]: https://docs.aws.amazon.com/AWSEC2/latest/APIReference/Query-Requests.html#api-pagination
 	Limit int32
 
 	// Set to true if pagination should stop if the service returns a pagination token
@@ -219,6 +193,9 @@ func (p *DescribeIamInstanceProfileAssociationsPaginator) NextPage(ctx context.C
 	}
 	params.MaxResults = limit
 
+	optFns = append([]func(*Options){
+		addIsPaginatorUserAgent,
+	}, optFns...)
 	result, err := p.client.DescribeIamInstanceProfileAssociations(ctx, &params, optFns...)
 	if err != nil {
 		return nil, err
@@ -238,10 +215,10 @@ func (p *DescribeIamInstanceProfileAssociationsPaginator) NextPage(ctx context.C
 	return result, nil
 }
 
-func newServiceMetadataMiddleware_opDescribeIamInstanceProfileAssociations(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeIamInstanceProfileAssociations",
-	}
+// DescribeIamInstanceProfileAssociationsAPIClient is a client that implements the
+// DescribeIamInstanceProfileAssociations operation.
+type DescribeIamInstanceProfileAssociationsAPIClient interface {
+	DescribeIamInstanceProfileAssociations(context.Context, *DescribeIamInstanceProfileAssociationsInput, ...func(*Options)) (*DescribeIamInstanceProfileAssociationsOutput, error)
 }
+
+var _ DescribeIamInstanceProfileAssociationsAPIClient = (*Client)(nil)

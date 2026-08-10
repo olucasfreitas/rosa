@@ -89,8 +89,8 @@ var idRE = regexp.MustCompile(`(?i)^[0-9a-z]+([-_][0-9a-z]+)*$`)
 
 var Cmd = &cobra.Command{
 	Use:   "idp",
-	Short: "Add IDP for cluster",
-	Long:  "Add an Identity providers to determine how users log into the cluster.",
+	Short: "Add an identity provider (IDP) for a cluster",
+	Long:  "Add an identity provider to determine how users log into the cluster.",
 	Example: `  # Add a GitHub identity provider to a cluster named "mycluster"
   rosa create idp --type=github --cluster=mycluster
 
@@ -444,20 +444,20 @@ func getIDPName(cmd *cobra.Command, idpName string, r *rosa.Runtime) string {
 	return strings.Trim(idpName, " \t")
 }
 
-func ValidateIdpName(idpName interface{}) error {
+func ValidateIdpName(idpName any) error {
 
 	name, ok := idpName.(string)
 
 	if !ok {
-		return fmt.Errorf("Invalid type for identity provider name. Expected a string,  got %T", idpName)
+		return fmt.Errorf("invalid type for identity provider name: expected a string, got %T", idpName)
 	}
 
 	if !idRE.MatchString(name) {
-		return fmt.Errorf("Invalid identifier '%s' for 'name'", idpName)
+		return fmt.Errorf("invalid identifier '%s' for 'name'", idpName)
 	}
 
 	if strings.EqualFold(name, "cluster-admin") {
-		return fmt.Errorf("The name \"cluster-admin\" is reserved for admin user IDP")
+		return fmt.Errorf("the name \"cluster-admin\" is reserved for admin user IDP")
 	}
 	return nil
 }
@@ -550,7 +550,7 @@ func getMappingMethod(cmd *cobra.Command, mappingMethod string) (string, error) 
 		}
 	}
 	if !isValidMappingMethod {
-		err = fmt.Errorf("Expected a valid mapping method. Options are %s", validMappingMethods)
+		err = fmt.Errorf("expected a valid mapping method; options are %s", validMappingMethods)
 	}
 	return mappingMethod, err
 }

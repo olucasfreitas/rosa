@@ -4,32 +4,36 @@ package ec2
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // Modifies the ID format for the specified resource on a per-Region basis. You
 // can specify that resources should receive longer IDs (17-character IDs) when
-// they are created. This request can only be used to modify longer ID settings for
-// resource types that are within the opt-in period. Resources currently in their
-// opt-in period include: bundle | conversion-task | customer-gateway |
-// dhcp-options | elastic-ip-allocation | elastic-ip-association | export-task |
-// flow-log | image | import-task | internet-gateway | network-acl |
-// network-acl-association | network-interface | network-interface-attachment |
-// prefix-list | route-table | route-table-association | security-group | subnet |
+// they are created.
+//
+// This request can only be used to modify longer ID settings for resource types
+// that are within the opt-in period. Resources currently in their opt-in period
+// include: bundle | conversion-task | customer-gateway | dhcp-options |
+// elastic-ip-allocation | elastic-ip-association | export-task | flow-log | image
+// | import-task | internet-gateway | network-acl | network-acl-association |
+// network-interface | network-interface-attachment | prefix-list | route-table |
+// route-table-association | security-group | subnet |
 // subnet-cidr-block-association | vpc | vpc-cidr-block-association | vpc-endpoint
-// | vpc-peering-connection | vpn-connection | vpn-gateway . This setting applies
-// to the IAM user who makes the request; it does not apply to the entire Amazon
-// Web Services account. By default, an IAM user defaults to the same settings as
-// the root user. If you're using this action as the root user, then these settings
-// apply to the entire account, unless an IAM user explicitly overrides these
-// settings for themselves. For more information, see Resource IDs (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/resource-ids.html)
-// in the Amazon Elastic Compute Cloud User Guide. Resources created with longer
-// IDs are visible to all IAM roles and users, regardless of these settings and
-// provided that they have permission to use the relevant Describe command for the
-// resource type.
+// | vpc-peering-connection | vpn-connection | vpn-gateway .
+//
+// This setting applies to the IAM user who makes the request; it does not apply
+// to the entire Amazon Web Services account. By default, an IAM user defaults to
+// the same settings as the root user. If you're using this action as the root
+// user, then these settings apply to the entire account, unless an IAM user
+// explicitly overrides these settings for themselves. For more information, see [Resource IDs]
+// in the Amazon Elastic Compute Cloud User Guide.
+//
+// Resources created with longer IDs are visible to all IAM roles and users,
+// regardless of these settings and provided that they have permission to use the
+// relevant Describe command for the resource type.
+//
+// [Resource IDs]: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/resource-ids.html
 func (c *Client) ModifyIdFormat(ctx context.Context, params *ModifyIdFormatInput, optFns ...func(*Options)) (*ModifyIdFormatOutput, error) {
 	if params == nil {
 		params = &ModifyIdFormatInput{}
@@ -53,9 +57,10 @@ type ModifyIdFormatInput struct {
 	// | network-interface | network-interface-attachment | prefix-list | route-table
 	// | route-table-association | security-group | subnet |
 	// subnet-cidr-block-association | vpc | vpc-cidr-block-association | vpc-endpoint
-	// | vpc-peering-connection | vpn-connection | vpn-gateway . Alternatively, use the
-	// all-current option to include all resource types that are currently within their
-	// opt-in period for longer IDs.
+	// | vpc-peering-connection | vpn-connection | vpn-gateway .
+	//
+	// Alternatively, use the all-current option to include all resource types that
+	// are currently within their opt-in period for longer IDs.
 	//
 	// This member is required.
 	Resource *string
@@ -76,9 +81,6 @@ type ModifyIdFormatOutput struct {
 }
 
 func (c *Client) addOperationModifyIdFormatMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpModifyIdFormat{}, middleware.After)
 	if err != nil {
 		return err
@@ -87,17 +89,8 @@ func (c *Client) addOperationModifyIdFormatMiddlewares(stack *middleware.Stack, 
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "ModifyIdFormat"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -109,16 +102,7 @@ func (c *Client) addOperationModifyIdFormatMiddlewares(stack *middleware.Stack, 
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -127,16 +111,13 @@ func (c *Client) addOperationModifyIdFormatMiddlewares(stack *middleware.Stack, 
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpModifyIdFormatValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opModifyIdFormat(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "ModifyIdFormat"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -151,13 +132,8 @@ func (c *Client) addOperationModifyIdFormatMiddlewares(stack *middleware.Stack, 
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opModifyIdFormat(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "ModifyIdFormat",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

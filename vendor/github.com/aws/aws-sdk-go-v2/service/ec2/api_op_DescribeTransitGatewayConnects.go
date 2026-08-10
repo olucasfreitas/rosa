@@ -5,7 +5,6 @@ package ec2
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -36,12 +35,17 @@ type DescribeTransitGatewayConnectsInput struct {
 	DryRun *bool
 
 	// One or more filters. The possible values are:
+	//
 	//   - options.protocol - The tunnel protocol ( gre ).
+	//
 	//   - state - The state of the attachment ( initiating | initiatingRequest |
 	//   pendingAcceptance | rollingBack | pending | available | modifying | deleting |
 	//   deleted | failed | rejected | rejecting | failing ).
+	//
 	//   - transit-gateway-attachment-id - The ID of the Connect attachment.
+	//
 	//   - transit-gateway-id - The ID of the transit gateway.
+	//
 	//   - transport-transit-gateway-attachment-id - The ID of the transit gateway
 	//   attachment from which the Connect attachment was created.
 	Filters []types.Filter
@@ -75,9 +79,6 @@ type DescribeTransitGatewayConnectsOutput struct {
 }
 
 func (c *Client) addOperationDescribeTransitGatewayConnectsMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpDescribeTransitGatewayConnects{}, middleware.After)
 	if err != nil {
 		return err
@@ -86,17 +87,8 @@ func (c *Client) addOperationDescribeTransitGatewayConnectsMiddlewares(stack *mi
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeTransitGatewayConnects"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -108,16 +100,7 @@ func (c *Client) addOperationDescribeTransitGatewayConnectsMiddlewares(stack *mi
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -126,13 +109,10 @@ func (c *Client) addOperationDescribeTransitGatewayConnectsMiddlewares(stack *mi
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeTransitGatewayConnects(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DescribeTransitGatewayConnects"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -147,16 +127,11 @@ func (c *Client) addOperationDescribeTransitGatewayConnectsMiddlewares(stack *mi
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
+	if err = addInterceptors(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
-
-// DescribeTransitGatewayConnectsAPIClient is a client that implements the
-// DescribeTransitGatewayConnects operation.
-type DescribeTransitGatewayConnectsAPIClient interface {
-	DescribeTransitGatewayConnects(context.Context, *DescribeTransitGatewayConnectsInput, ...func(*Options)) (*DescribeTransitGatewayConnectsOutput, error)
-}
-
-var _ DescribeTransitGatewayConnectsAPIClient = (*Client)(nil)
 
 // DescribeTransitGatewayConnectsPaginatorOptions is the paginator options for
 // DescribeTransitGatewayConnects
@@ -225,6 +200,9 @@ func (p *DescribeTransitGatewayConnectsPaginator) NextPage(ctx context.Context, 
 	}
 	params.MaxResults = limit
 
+	optFns = append([]func(*Options){
+		addIsPaginatorUserAgent,
+	}, optFns...)
 	result, err := p.client.DescribeTransitGatewayConnects(ctx, &params, optFns...)
 	if err != nil {
 		return nil, err
@@ -244,10 +222,10 @@ func (p *DescribeTransitGatewayConnectsPaginator) NextPage(ctx context.Context, 
 	return result, nil
 }
 
-func newServiceMetadataMiddleware_opDescribeTransitGatewayConnects(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeTransitGatewayConnects",
-	}
+// DescribeTransitGatewayConnectsAPIClient is a client that implements the
+// DescribeTransitGatewayConnects operation.
+type DescribeTransitGatewayConnectsAPIClient interface {
+	DescribeTransitGatewayConnects(context.Context, *DescribeTransitGatewayConnectsInput, ...func(*Options)) (*DescribeTransitGatewayConnectsOutput, error)
 }
+
+var _ DescribeTransitGatewayConnectsAPIClient = (*Client)(nil)

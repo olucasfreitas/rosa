@@ -4,8 +4,6 @@ package ec2
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -16,11 +14,16 @@ import (
 // create volume permissions, but you cannot do both in a single operation. If you
 // need to both add and remove account IDs for a snapshot, you must use multiple
 // operations. You can make up to 500 modifications to a snapshot in a single
-// operation. Encrypted snapshots and snapshots with Amazon Web Services
-// Marketplace product codes cannot be made public. Snapshots encrypted with your
-// default KMS key cannot be shared with other accounts. For more information about
-// modifying snapshot permissions, see Share a snapshot (https://docs.aws.amazon.com/ebs/latest/userguide/ebs-modifying-snapshot-permissions.html)
-// in the Amazon EBS User Guide.
+// operation.
+//
+// Encrypted snapshots and snapshots with Amazon Web Services Marketplace product
+// codes cannot be made public. Snapshots encrypted with your default KMS key
+// cannot be shared with other accounts.
+//
+// For more information about modifying snapshot permissions, see [Share a snapshot] in the Amazon
+// EBS User Guide.
+//
+// [Share a snapshot]: https://docs.aws.amazon.com/ebs/latest/userguide/ebs-modifying-snapshot-permissions.html
 func (c *Client) ModifySnapshotAttribute(ctx context.Context, params *ModifySnapshotAttributeInput, optFns ...func(*Options)) (*ModifySnapshotAttributeOutput, error) {
 	if params == nil {
 		params = &ModifySnapshotAttributeInput{}
@@ -76,9 +79,6 @@ type ModifySnapshotAttributeOutput struct {
 }
 
 func (c *Client) addOperationModifySnapshotAttributeMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpModifySnapshotAttribute{}, middleware.After)
 	if err != nil {
 		return err
@@ -87,17 +87,8 @@ func (c *Client) addOperationModifySnapshotAttributeMiddlewares(stack *middlewar
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "ModifySnapshotAttribute"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -109,16 +100,7 @@ func (c *Client) addOperationModifySnapshotAttributeMiddlewares(stack *middlewar
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -127,16 +109,13 @@ func (c *Client) addOperationModifySnapshotAttributeMiddlewares(stack *middlewar
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpModifySnapshotAttributeValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opModifySnapshotAttribute(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "ModifySnapshotAttribute"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -151,13 +130,8 @@ func (c *Client) addOperationModifySnapshotAttributeMiddlewares(stack *middlewar
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opModifySnapshotAttribute(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "ModifySnapshotAttribute",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

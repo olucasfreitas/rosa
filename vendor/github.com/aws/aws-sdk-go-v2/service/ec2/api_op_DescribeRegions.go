@@ -4,21 +4,24 @@ package ec2
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Describes the Regions that are enabled for your account, or all Regions. For a
-// list of the Regions supported by Amazon EC2, see Amazon Elastic Compute Cloud
-// endpoints and quotas (https://docs.aws.amazon.com/general/latest/gr/ec2-service.html)
-// . For information about enabling and disabling Regions for your account, see
-// Managing Amazon Web Services Regions (https://docs.aws.amazon.com/general/latest/gr/rande-manage.html)
-// in the Amazon Web Services General Reference. The order of the elements in the
-// response, including those within nested structures, might vary. Applications
-// should not assume the elements appear in a particular order.
+// Describes the Regions that are enabled for your account, or all Regions.
+//
+// For a list of the Regions supported by Amazon EC2, see [Amazon EC2 service endpoints].
+//
+// For information about enabling and disabling Regions for your account, see [Specify which Amazon Web Services Regions your account can use] in
+// the Amazon Web Services Account Management Reference Guide.
+//
+// The order of the elements in the response, including those within nested
+// structures, might vary. Applications should not assume the elements appear in a
+// particular order.
+//
+// [Specify which Amazon Web Services Regions your account can use]: https://docs.aws.amazon.com/accounts/latest/reference/manage-acct-regions.html
+// [Amazon EC2 service endpoints]: https://docs.aws.amazon.com/ec2/latest/devguide/ec2-endpoints.html
 func (c *Client) DescribeRegions(ctx context.Context, params *DescribeRegionsInput, optFns ...func(*Options)) (*DescribeRegionsOutput, error) {
 	if params == nil {
 		params = &DescribeRegionsInput{}
@@ -47,10 +50,13 @@ type DescribeRegionsInput struct {
 	DryRun *bool
 
 	// The filters.
+	//
 	//   - endpoint - The endpoint of the Region (for example,
 	//   ec2.us-east-1.amazonaws.com ).
+	//
 	//   - opt-in-status - The opt-in status of the Region ( opt-in-not-required |
 	//   opted-in | not-opted-in ).
+	//
 	//   - region-name - The name of the Region (for example, us-east-1 ).
 	Filters []types.Filter
 
@@ -73,9 +79,6 @@ type DescribeRegionsOutput struct {
 }
 
 func (c *Client) addOperationDescribeRegionsMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpDescribeRegions{}, middleware.After)
 	if err != nil {
 		return err
@@ -84,17 +87,8 @@ func (c *Client) addOperationDescribeRegionsMiddlewares(stack *middleware.Stack,
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeRegions"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -106,16 +100,7 @@ func (c *Client) addOperationDescribeRegionsMiddlewares(stack *middleware.Stack,
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -124,13 +109,10 @@ func (c *Client) addOperationDescribeRegionsMiddlewares(stack *middleware.Stack,
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeRegions(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DescribeRegions"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -145,13 +127,8 @@ func (c *Client) addOperationDescribeRegionsMiddlewares(stack *middleware.Stack,
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opDescribeRegions(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeRegions",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

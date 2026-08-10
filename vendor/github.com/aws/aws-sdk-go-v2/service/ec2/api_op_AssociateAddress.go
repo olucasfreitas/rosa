@@ -4,27 +4,32 @@ package ec2
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // Associates an Elastic IP address, or carrier IP address (for instances that are
 // in subnets in Wavelength Zones) with an instance or a network interface. Before
-// you can use an Elastic IP address, you must allocate it to your account. If the
-// Elastic IP address is already associated with a different instance, it is
-// disassociated from that instance and associated with the specified instance. If
-// you associate an Elastic IP address with an instance that has an existing
+// you can use an Elastic IP address, you must allocate it to your account.
+//
+// If the Elastic IP address is already associated with a different instance, it
+// is disassociated from that instance and associated with the specified instance.
+// If you associate an Elastic IP address with an instance that has an existing
 // Elastic IP address, the existing address is disassociated from the instance, but
-// remains allocated to your account. [Subnets in Wavelength Zones] You can
-// associate an IP address from the telecommunication carrier to the instance or
-// network interface. You cannot associate an Elastic IP address with an interface
-// in a different network border group. This is an idempotent operation. If you
-// perform the operation more than once, Amazon EC2 doesn't return an error, and
-// you may be charged for each time the Elastic IP address is remapped to the same
-// instance. For more information, see the Elastic IP Addresses section of Amazon
-// EC2 Pricing (http://aws.amazon.com/ec2/pricing/) .
+// remains allocated to your account.
+//
+// [Subnets in Wavelength Zones] You can associate an IP address from the
+// telecommunication carrier to the instance or network interface.
+//
+// You cannot associate an Elastic IP address with an interface in a different
+// network border group.
+//
+// This is an idempotent operation. If you perform the operation more than once,
+// Amazon EC2 doesn't return an error, and you may be charged for each time the
+// Elastic IP address is remapped to the same instance. For more information, see
+// the Elastic IP Addresses section of [Amazon EC2 Pricing].
+//
+// [Amazon EC2 Pricing]: http://aws.amazon.com/ec2/pricing/
 func (c *Client) AssociateAddress(ctx context.Context, params *AssociateAddressInput, optFns ...func(*Options)) (*AssociateAddressOutput, error) {
 	if params == nil {
 		params = &AssociateAddressInput{}
@@ -61,8 +66,10 @@ type AssociateAddressInput struct {
 	InstanceId *string
 
 	// The ID of the network interface. If the instance has more than one network
-	// interface, you must specify a network interface ID. You can specify either the
-	// instance ID or the network interface ID, but not both.
+	// interface, you must specify a network interface ID.
+	//
+	// You can specify either the instance ID or the network interface ID, but not
+	// both.
 	NetworkInterfaceId *string
 
 	// The primary or secondary private IP address to associate with the Elastic IP
@@ -89,9 +96,6 @@ type AssociateAddressOutput struct {
 }
 
 func (c *Client) addOperationAssociateAddressMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpAssociateAddress{}, middleware.After)
 	if err != nil {
 		return err
@@ -100,17 +104,8 @@ func (c *Client) addOperationAssociateAddressMiddlewares(stack *middleware.Stack
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "AssociateAddress"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -122,16 +117,7 @@ func (c *Client) addOperationAssociateAddressMiddlewares(stack *middleware.Stack
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -140,13 +126,10 @@ func (c *Client) addOperationAssociateAddressMiddlewares(stack *middleware.Stack
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opAssociateAddress(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "AssociateAddress"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -161,13 +144,8 @@ func (c *Client) addOperationAssociateAddressMiddlewares(stack *middleware.Stack
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opAssociateAddress(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "AssociateAddress",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

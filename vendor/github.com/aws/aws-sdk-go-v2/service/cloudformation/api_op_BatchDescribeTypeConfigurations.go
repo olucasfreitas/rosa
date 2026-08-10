@@ -4,17 +4,17 @@ package cloudformation
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/cloudformation/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // Returns configuration data for the specified CloudFormation extensions, from
-// the CloudFormation registry for the account and Region. For more information,
-// see Configuring extensions at the account level (https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/registry-private.html#registry-set-configuration)
-// in the CloudFormation User Guide.
+// the CloudFormation registry in your current account and Region.
+//
+// For more information, see [Edit configuration data for extensions in your account] in the CloudFormation User Guide.
+//
+// [Edit configuration data for extensions in your account]: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/registry-set-configuration.html
 func (c *Client) BatchDescribeTypeConfigurations(ctx context.Context, params *BatchDescribeTypeConfigurationsInput, optFns ...func(*Options)) (*BatchDescribeTypeConfigurationsOutput, error) {
 	if params == nil {
 		params = &BatchDescribeTypeConfigurationsInput{}
@@ -61,9 +61,6 @@ type BatchDescribeTypeConfigurationsOutput struct {
 }
 
 func (c *Client) addOperationBatchDescribeTypeConfigurationsMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsAwsquery_serializeOpBatchDescribeTypeConfigurations{}, middleware.After)
 	if err != nil {
 		return err
@@ -72,17 +69,8 @@ func (c *Client) addOperationBatchDescribeTypeConfigurationsMiddlewares(stack *m
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "BatchDescribeTypeConfigurations"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -94,16 +82,7 @@ func (c *Client) addOperationBatchDescribeTypeConfigurationsMiddlewares(stack *m
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -112,16 +91,13 @@ func (c *Client) addOperationBatchDescribeTypeConfigurationsMiddlewares(stack *m
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpBatchDescribeTypeConfigurationsValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opBatchDescribeTypeConfigurations(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "BatchDescribeTypeConfigurations"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -136,13 +112,8 @@ func (c *Client) addOperationBatchDescribeTypeConfigurationsMiddlewares(stack *m
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opBatchDescribeTypeConfigurations(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "BatchDescribeTypeConfigurations",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

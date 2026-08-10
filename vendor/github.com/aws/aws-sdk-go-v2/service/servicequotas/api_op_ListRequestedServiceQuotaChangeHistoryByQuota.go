@@ -5,13 +5,14 @@ package servicequotas
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/servicequotas/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Retrieves the quota increase requests for the specified quota.
+// Retrieves the quota increase requests for the specified quota. Filter responses
+// to return quota requests at either the account level, resource level, or all
+// levels.
 func (c *Client) ListRequestedServiceQuotaChangeHistoryByQuota(ctx context.Context, params *ListRequestedServiceQuotaChangeHistoryByQuotaInput, optFns ...func(*Options)) (*ListRequestedServiceQuotaChangeHistoryByQuotaOutput, error) {
 	if params == nil {
 		params = &ListRequestedServiceQuotaChangeHistoryByQuotaInput{}
@@ -30,14 +31,14 @@ func (c *Client) ListRequestedServiceQuotaChangeHistoryByQuota(ctx context.Conte
 type ListRequestedServiceQuotaChangeHistoryByQuotaInput struct {
 
 	// Specifies the quota identifier. To find the quota code for a specific quota,
-	// use the ListServiceQuotas operation, and look for the QuotaCode response in the
-	// output for the quota you want.
+	// use the ListServiceQuotasoperation, and look for the QuotaCode response in the output for the
+	// quota you want.
 	//
 	// This member is required.
 	QuotaCode *string
 
 	// Specifies the service identifier. To find the service code value for an Amazon
-	// Web Services service, use the ListServices operation.
+	// Web Services service, use the ListServicesoperation.
 	//
 	// This member is required.
 	ServiceCode *string
@@ -47,10 +48,11 @@ type ListRequestedServiceQuotaChangeHistoryByQuotaInput struct {
 	// appropriate to the operation. If additional items exist beyond those included in
 	// the current response, the NextToken response element is present and has a value
 	// (is not null). Include that value as the NextToken request parameter in the
-	// next call to the operation to get the next part of the results. An API operation
-	// can return fewer results than the maximum even when there are more results
-	// available. You should check NextToken after every operation to ensure that you
-	// receive all of the results.
+	// next call to the operation to get the next part of the results.
+	//
+	// An API operation can return fewer results than the maximum even when there are
+	// more results available. You should check NextToken after every operation to
+	// ensure that you receive all of the results.
 	MaxResults *int32
 
 	// Specifies a value for receiving additional results after you receive a NextToken
@@ -59,8 +61,8 @@ type ListRequestedServiceQuotaChangeHistoryByQuotaInput struct {
 	// response to indicate where the output should continue from.
 	NextToken *string
 
-	// Specifies at which level within the Amazon Web Services account the quota
-	// request applies to.
+	// Filters the response to return quota requests for the ACCOUNT , RESOURCE , or
+	// ALL levels. ACCOUNT is the default.
 	QuotaRequestedAtLevel types.AppliedLevelEnum
 
 	// Specifies that you want to filter the results to only the requests with the
@@ -88,9 +90,6 @@ type ListRequestedServiceQuotaChangeHistoryByQuotaOutput struct {
 }
 
 func (c *Client) addOperationListRequestedServiceQuotaChangeHistoryByQuotaMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpListRequestedServiceQuotaChangeHistoryByQuota{}, middleware.After)
 	if err != nil {
 		return err
@@ -99,17 +98,8 @@ func (c *Client) addOperationListRequestedServiceQuotaChangeHistoryByQuotaMiddle
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "ListRequestedServiceQuotaChangeHistoryByQuota"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -121,16 +111,7 @@ func (c *Client) addOperationListRequestedServiceQuotaChangeHistoryByQuotaMiddle
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -139,16 +120,13 @@ func (c *Client) addOperationListRequestedServiceQuotaChangeHistoryByQuotaMiddle
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpListRequestedServiceQuotaChangeHistoryByQuotaValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opListRequestedServiceQuotaChangeHistoryByQuota(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "ListRequestedServiceQuotaChangeHistoryByQuota"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -163,16 +141,11 @@ func (c *Client) addOperationListRequestedServiceQuotaChangeHistoryByQuotaMiddle
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
+	if err = addInterceptors(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
-
-// ListRequestedServiceQuotaChangeHistoryByQuotaAPIClient is a client that
-// implements the ListRequestedServiceQuotaChangeHistoryByQuota operation.
-type ListRequestedServiceQuotaChangeHistoryByQuotaAPIClient interface {
-	ListRequestedServiceQuotaChangeHistoryByQuota(context.Context, *ListRequestedServiceQuotaChangeHistoryByQuotaInput, ...func(*Options)) (*ListRequestedServiceQuotaChangeHistoryByQuotaOutput, error)
-}
-
-var _ ListRequestedServiceQuotaChangeHistoryByQuotaAPIClient = (*Client)(nil)
 
 // ListRequestedServiceQuotaChangeHistoryByQuotaPaginatorOptions is the paginator
 // options for ListRequestedServiceQuotaChangeHistoryByQuota
@@ -182,10 +155,11 @@ type ListRequestedServiceQuotaChangeHistoryByQuotaPaginatorOptions struct {
 	// appropriate to the operation. If additional items exist beyond those included in
 	// the current response, the NextToken response element is present and has a value
 	// (is not null). Include that value as the NextToken request parameter in the
-	// next call to the operation to get the next part of the results. An API operation
-	// can return fewer results than the maximum even when there are more results
-	// available. You should check NextToken after every operation to ensure that you
-	// receive all of the results.
+	// next call to the operation to get the next part of the results.
+	//
+	// An API operation can return fewer results than the maximum even when there are
+	// more results available. You should check NextToken after every operation to
+	// ensure that you receive all of the results.
 	Limit int32
 
 	// Set to true if pagination should stop if the service returns a pagination token
@@ -248,6 +222,9 @@ func (p *ListRequestedServiceQuotaChangeHistoryByQuotaPaginator) NextPage(ctx co
 	}
 	params.MaxResults = limit
 
+	optFns = append([]func(*Options){
+		addIsPaginatorUserAgent,
+	}, optFns...)
 	result, err := p.client.ListRequestedServiceQuotaChangeHistoryByQuota(ctx, &params, optFns...)
 	if err != nil {
 		return nil, err
@@ -267,10 +244,10 @@ func (p *ListRequestedServiceQuotaChangeHistoryByQuotaPaginator) NextPage(ctx co
 	return result, nil
 }
 
-func newServiceMetadataMiddleware_opListRequestedServiceQuotaChangeHistoryByQuota(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "ListRequestedServiceQuotaChangeHistoryByQuota",
-	}
+// ListRequestedServiceQuotaChangeHistoryByQuotaAPIClient is a client that
+// implements the ListRequestedServiceQuotaChangeHistoryByQuota operation.
+type ListRequestedServiceQuotaChangeHistoryByQuotaAPIClient interface {
+	ListRequestedServiceQuotaChangeHistoryByQuota(context.Context, *ListRequestedServiceQuotaChangeHistoryByQuotaInput, ...func(*Options)) (*ListRequestedServiceQuotaChangeHistoryByQuotaOutput, error)
 }
+
+var _ ListRequestedServiceQuotaChangeHistoryByQuotaAPIClient = (*Client)(nil)

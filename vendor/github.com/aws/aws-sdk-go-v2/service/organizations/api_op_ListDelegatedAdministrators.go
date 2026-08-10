@@ -5,16 +5,16 @@ package organizations
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // Lists the Amazon Web Services accounts that are designated as delegated
-// administrators in this organization. This operation can be called only from the
-// organization's management account or by a member account that is a delegated
-// administrator for an Amazon Web Services service.
+// administrators in this organization.
+//
+// You can only call this operation from the management account or a member
+// account that is a delegated administrator.
 func (c *Client) ListDelegatedAdministrators(ctx context.Context, params *ListDelegatedAdministratorsInput, optFns ...func(*Options)) (*ListDelegatedAdministratorsOutput, error) {
 	if params == nil {
 		params = &ListDelegatedAdministratorsInput{}
@@ -32,15 +32,9 @@ func (c *Client) ListDelegatedAdministrators(ctx context.Context, params *ListDe
 
 type ListDelegatedAdministratorsInput struct {
 
-	// The total number of results that you want included on each page of the
-	// response. If you do not include this parameter, it defaults to a value that is
-	// specific to the operation. If additional items exist beyond the maximum you
-	// specify, the NextToken response element is present and has a value (is not
-	// null). Include that value as the NextToken request parameter in the next call
-	// to the operation to get the next part of the results. Note that Organizations
-	// might return fewer results than the maximum even when there are more results
-	// available. You should check NextToken after every operation to ensure that you
-	// receive all of the results.
+	// The maximum number of items to return in the response. If more results exist
+	// than the specified MaxResults value, a token is included in the response so
+	// that you can retrieve the remaining results.
 	MaxResults *int32
 
 	// The parameter for receiving additional results if you receive a NextToken
@@ -50,9 +44,10 @@ type ListDelegatedAdministratorsInput struct {
 	NextToken *string
 
 	// Specifies a service principal name. If specified, then the operation lists the
-	// delegated administrators only for the specified service. If you don't specify a
-	// service principal, the operation lists all delegated administrators for all
-	// services in your organization.
+	// delegated administrators only for the specified service.
+	//
+	// If you don't specify a service principal, the operation lists all delegated
+	// administrators for all services in your organization.
 	ServicePrincipal *string
 
 	noSmithyDocumentSerde
@@ -76,9 +71,6 @@ type ListDelegatedAdministratorsOutput struct {
 }
 
 func (c *Client) addOperationListDelegatedAdministratorsMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpListDelegatedAdministrators{}, middleware.After)
 	if err != nil {
 		return err
@@ -87,17 +79,8 @@ func (c *Client) addOperationListDelegatedAdministratorsMiddlewares(stack *middl
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "ListDelegatedAdministrators"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -109,16 +92,7 @@ func (c *Client) addOperationListDelegatedAdministratorsMiddlewares(stack *middl
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -127,13 +101,10 @@ func (c *Client) addOperationListDelegatedAdministratorsMiddlewares(stack *middl
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opListDelegatedAdministrators(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "ListDelegatedAdministrators"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -148,29 +119,18 @@ func (c *Client) addOperationListDelegatedAdministratorsMiddlewares(stack *middl
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
+	if err = addInterceptors(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
-
-// ListDelegatedAdministratorsAPIClient is a client that implements the
-// ListDelegatedAdministrators operation.
-type ListDelegatedAdministratorsAPIClient interface {
-	ListDelegatedAdministrators(context.Context, *ListDelegatedAdministratorsInput, ...func(*Options)) (*ListDelegatedAdministratorsOutput, error)
-}
-
-var _ ListDelegatedAdministratorsAPIClient = (*Client)(nil)
 
 // ListDelegatedAdministratorsPaginatorOptions is the paginator options for
 // ListDelegatedAdministrators
 type ListDelegatedAdministratorsPaginatorOptions struct {
-	// The total number of results that you want included on each page of the
-	// response. If you do not include this parameter, it defaults to a value that is
-	// specific to the operation. If additional items exist beyond the maximum you
-	// specify, the NextToken response element is present and has a value (is not
-	// null). Include that value as the NextToken request parameter in the next call
-	// to the operation to get the next part of the results. Note that Organizations
-	// might return fewer results than the maximum even when there are more results
-	// available. You should check NextToken after every operation to ensure that you
-	// receive all of the results.
+	// The maximum number of items to return in the response. If more results exist
+	// than the specified MaxResults value, a token is included in the response so
+	// that you can retrieve the remaining results.
 	Limit int32
 
 	// Set to true if pagination should stop if the service returns a pagination token
@@ -233,6 +193,9 @@ func (p *ListDelegatedAdministratorsPaginator) NextPage(ctx context.Context, opt
 	}
 	params.MaxResults = limit
 
+	optFns = append([]func(*Options){
+		addIsPaginatorUserAgent,
+	}, optFns...)
 	result, err := p.client.ListDelegatedAdministrators(ctx, &params, optFns...)
 	if err != nil {
 		return nil, err
@@ -252,10 +215,10 @@ func (p *ListDelegatedAdministratorsPaginator) NextPage(ctx context.Context, opt
 	return result, nil
 }
 
-func newServiceMetadataMiddleware_opListDelegatedAdministrators(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "ListDelegatedAdministrators",
-	}
+// ListDelegatedAdministratorsAPIClient is a client that implements the
+// ListDelegatedAdministrators operation.
+type ListDelegatedAdministratorsAPIClient interface {
+	ListDelegatedAdministrators(context.Context, *ListDelegatedAdministratorsInput, ...func(*Options)) (*ListDelegatedAdministratorsOutput, error)
 }
+
+var _ ListDelegatedAdministratorsAPIClient = (*Client)(nil)

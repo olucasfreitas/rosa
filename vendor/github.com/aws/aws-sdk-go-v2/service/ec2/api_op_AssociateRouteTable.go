@@ -4,8 +4,6 @@ package ec2
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -16,8 +14,11 @@ import (
 // causes traffic from the subnet or gateway to be routed according to the routes
 // in the route table. The action returns an association ID, which you need in
 // order to disassociate the route table later. A route table can be associated
-// with multiple subnets. For more information, see Route tables (https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Route_Tables.html)
-// in the Amazon VPC User Guide.
+// with multiple subnets.
+//
+// For more information, see [Route tables] in the Amazon VPC User Guide.
+//
+// [Route tables]: https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Route_Tables.html
 func (c *Client) AssociateRouteTable(ctx context.Context, params *AssociateRouteTableInput, optFns ...func(*Options)) (*AssociateRouteTableOutput, error) {
 	if params == nil {
 		params = &AssociateRouteTableInput{}
@@ -49,6 +50,10 @@ type AssociateRouteTableInput struct {
 	// The ID of the internet gateway or virtual private gateway.
 	GatewayId *string
 
+	// The ID of a public IPv4 pool. A public IPv4 pool is a pool of IPv4 addresses
+	// that you've brought to Amazon Web Services with BYOIP.
+	PublicIpv4Pool *string
+
 	// The ID of the subnet.
 	SubnetId *string
 
@@ -71,9 +76,6 @@ type AssociateRouteTableOutput struct {
 }
 
 func (c *Client) addOperationAssociateRouteTableMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpAssociateRouteTable{}, middleware.After)
 	if err != nil {
 		return err
@@ -82,17 +84,8 @@ func (c *Client) addOperationAssociateRouteTableMiddlewares(stack *middleware.St
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "AssociateRouteTable"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -104,16 +97,7 @@ func (c *Client) addOperationAssociateRouteTableMiddlewares(stack *middleware.St
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -122,16 +106,13 @@ func (c *Client) addOperationAssociateRouteTableMiddlewares(stack *middleware.St
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpAssociateRouteTableValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opAssociateRouteTable(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "AssociateRouteTable"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -146,13 +127,8 @@ func (c *Client) addOperationAssociateRouteTableMiddlewares(stack *middleware.St
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opAssociateRouteTable(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "AssociateRouteTable",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

@@ -4,8 +4,6 @@ package organizations
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -13,9 +11,10 @@ import (
 
 // Updates an existing policy with a new name, description, or content. If you
 // don't supply any parameter, that value remains unchanged. You can't change a
-// policy's type. This operation can be called only from the organization's
-// management account or by a member account that is a delegated administrator for
-// an Amazon Web Services service.
+// policy's type.
+//
+// You can only call this operation from the management account or a member
+// account that is a delegated administrator.
 func (c *Client) UpdatePolicy(ctx context.Context, params *UpdatePolicyInput, optFns ...func(*Options)) (*UpdatePolicyOutput, error) {
 	if params == nil {
 		params = &UpdatePolicyInput{}
@@ -33,28 +32,36 @@ func (c *Client) UpdatePolicy(ctx context.Context, params *UpdatePolicyInput, op
 
 type UpdatePolicyInput struct {
 
-	// The unique identifier (ID) of the policy that you want to update. The regex
-	// pattern (http://wikipedia.org/wiki/regex) for a policy ID string requires "p-"
-	// followed by from 8 to 128 lowercase or uppercase letters, digits, or the
-	// underscore character (_).
+	// ID for the policy that you want to update.
+	//
+	// The [regex pattern] for a policy ID string requires "p-" followed by from 8 to 128 lowercase
+	// or uppercase letters, digits, or the underscore character (_).
+	//
+	// [regex pattern]: http://wikipedia.org/wiki/regex
 	//
 	// This member is required.
 	PolicyId *string
 
 	// If provided, the new content for the policy. The text must be correctly
 	// formatted JSON that complies with the syntax for the policy's type. For more
-	// information, see SCP syntax (https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps_syntax.html)
-	// in the Organizations User Guide. The maximum size of a policy document depends
-	// on the policy's type. For more information, see Maximum and minimum values (https://docs.aws.amazon.com/organizations/latest/userguide/orgs_reference_limits.html#min-max-values)
-	// in the Organizations User Guide.
+	// information, see [SCP syntax]in the Organizations User Guide.
+	//
+	// The maximum size of a policy document depends on the policy's type. For more
+	// information, see [Maximum and minimum values]in the Organizations User Guide.
+	//
+	// [Maximum and minimum values]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_reference_limits.html#min-max-values
+	// [SCP syntax]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps_syntax.html
 	Content *string
 
 	// If provided, the new description for the policy.
 	Description *string
 
-	// If provided, the new name for the policy. The regex pattern (http://wikipedia.org/wiki/regex)
-	// that is used to validate this parameter is a string of any of the characters in
-	// the ASCII character range.
+	// If provided, the new name for the policy.
+	//
+	// The [regex pattern] that is used to validate this parameter is a string of any of the
+	// characters in the ASCII character range.
+	//
+	// [regex pattern]: http://wikipedia.org/wiki/regex
 	Name *string
 
 	noSmithyDocumentSerde
@@ -73,9 +80,6 @@ type UpdatePolicyOutput struct {
 }
 
 func (c *Client) addOperationUpdatePolicyMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpUpdatePolicy{}, middleware.After)
 	if err != nil {
 		return err
@@ -84,17 +88,8 @@ func (c *Client) addOperationUpdatePolicyMiddlewares(stack *middleware.Stack, op
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "UpdatePolicy"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -106,16 +101,7 @@ func (c *Client) addOperationUpdatePolicyMiddlewares(stack *middleware.Stack, op
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -124,16 +110,13 @@ func (c *Client) addOperationUpdatePolicyMiddlewares(stack *middleware.Stack, op
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpUpdatePolicyValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opUpdatePolicy(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "UpdatePolicy"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -148,13 +131,8 @@ func (c *Client) addOperationUpdatePolicyMiddlewares(stack *middleware.Stack, op
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opUpdatePolicy(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "UpdatePolicy",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

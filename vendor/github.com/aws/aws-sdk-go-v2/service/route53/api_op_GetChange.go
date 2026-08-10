@@ -5,21 +5,21 @@ package route53
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/route53/types"
 	"github.com/aws/smithy-go/middleware"
 	smithytime "github.com/aws/smithy-go/time"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 	smithywaiter "github.com/aws/smithy-go/waiter"
-	"github.com/jmespath/go-jmespath"
 	"time"
 )
 
 // Returns the current status of a change batch request. The status is one of the
 // following values:
+//
 //   - PENDING indicates that the changes in this request have not propagated to
 //     all Amazon Route 53 DNS servers managing the hosted zone. This is the initial
 //     status of all change batch requests.
+//
 //   - INSYNC indicates that the changes have propagated to all Route 53 DNS
 //     servers managing the hosted zone.
 func (c *Client) GetChange(ctx context.Context, params *GetChangeInput, optFns ...func(*Options)) (*GetChangeOutput, error) {
@@ -65,9 +65,6 @@ type GetChangeOutput struct {
 }
 
 func (c *Client) addOperationGetChangeMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsRestxml_serializeOpGetChange{}, middleware.After)
 	if err != nil {
 		return err
@@ -76,17 +73,8 @@ func (c *Client) addOperationGetChangeMiddlewares(stack *middleware.Stack, optio
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "GetChange"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -98,16 +86,7 @@ func (c *Client) addOperationGetChangeMiddlewares(stack *middleware.Stack, optio
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -116,16 +95,13 @@ func (c *Client) addOperationGetChangeMiddlewares(stack *middleware.Stack, optio
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpGetChangeValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opGetChange(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "GetChange"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -143,15 +119,11 @@ func (c *Client) addOperationGetChangeMiddlewares(stack *middleware.Stack, optio
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
+	if err = addInterceptors(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
-
-// GetChangeAPIClient is a client that implements the GetChange operation.
-type GetChangeAPIClient interface {
-	GetChange(context.Context, *GetChangeInput, ...func(*Options)) (*GetChangeOutput, error)
-}
-
-var _ GetChangeAPIClient = (*Client)(nil)
 
 // ResourceRecordSetsChangedWaiterOptions are waiter options for
 // ResourceRecordSetsChangedWaiter
@@ -187,12 +159,13 @@ type ResourceRecordSetsChangedWaiterOptions struct {
 
 	// Retryable is function that can be used to override the service defined
 	// waiter-behavior based on operation output, or returned error. This function is
-	// used by the waiter to decide if a state is retryable or a terminal state. By
-	// default service-modeled logic will populate this option. This option can thus be
-	// used to define a custom waiter state with fall-back to service-modeled waiter
-	// state mutators.The function returns an error in case of a failure state. In case
-	// of retry state, this function returns a bool value of true and nil error, while
-	// in case of success it returns a bool value of false and nil error.
+	// used by the waiter to decide if a state is retryable or a terminal state.
+	//
+	// By default service-modeled logic will populate this option. This option can
+	// thus be used to define a custom waiter state with fall-back to service-modeled
+	// waiter state mutators.The function returns an error in case of a failure state.
+	// In case of retry state, this function returns a bool value of true and nil
+	// error, while in case of success it returns a bool value of false and nil error.
 	Retryable func(context.Context, *GetChangeInput, *GetChangeOutput, error) (bool, error)
 }
 
@@ -270,7 +243,13 @@ func (w *ResourceRecordSetsChangedWaiter) WaitForOutput(ctx context.Context, par
 		}
 
 		out, err := w.client.GetChange(ctx, params, func(o *Options) {
+			baseOpts := []func(*Options){
+				addIsWaiterUserAgent,
+			}
 			o.APIOptions = append(o.APIOptions, apiOptions...)
+			for _, opt := range baseOpts {
+				opt(o)
+			}
 			for _, opt := range options.ClientOptions {
 				opt(o)
 			}
@@ -309,29 +288,29 @@ func (w *ResourceRecordSetsChangedWaiter) WaitForOutput(ctx context.Context, par
 func resourceRecordSetsChangedStateRetryable(ctx context.Context, input *GetChangeInput, output *GetChangeOutput, err error) (bool, error) {
 
 	if err == nil {
-		pathValue, err := jmespath.Search("ChangeInfo.Status", output)
-		if err != nil {
-			return false, fmt.Errorf("error evaluating waiter state: %w", err)
+		v1 := output.ChangeInfo
+		var v2 types.ChangeStatus
+		if v1 != nil {
+			v3 := v1.Status
+			v2 = v3
 		}
-
 		expectedValue := "INSYNC"
-		value, ok := pathValue.(types.ChangeStatus)
-		if !ok {
-			return false, fmt.Errorf("waiter comparator expected types.ChangeStatus value, got %T", pathValue)
-		}
-
-		if string(value) == expectedValue {
+		var pathValue string
+		pathValue = string(v2)
+		if pathValue == expectedValue {
 			return false, nil
 		}
 	}
 
+	if err != nil {
+		return false, err
+	}
 	return true, nil
 }
 
-func newServiceMetadataMiddleware_opGetChange(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "GetChange",
-	}
+// GetChangeAPIClient is a client that implements the GetChange operation.
+type GetChangeAPIClient interface {
+	GetChange(context.Context, *GetChangeInput, ...func(*Options)) (*GetChangeOutput, error)
 }
+
+var _ GetChangeAPIClient = (*Client)(nil)

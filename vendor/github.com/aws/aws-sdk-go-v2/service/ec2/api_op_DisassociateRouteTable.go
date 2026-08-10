@@ -4,17 +4,17 @@ package ec2
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Disassociates a subnet or gateway from a route table. After you perform this
-// action, the subnet no longer uses the routes in the route table. Instead, it
-// uses the routes in the VPC's main route table. For more information about route
-// tables, see Route tables (https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Route_Tables.html)
-// in the Amazon VPC User Guide.
+// Disassociates a subnet or gateway from a route table.
+//
+// After you perform this action, the subnet no longer uses the routes in the
+// route table. Instead, it uses the routes in the VPC's main route table. For more
+// information about route tables, see [Route tables]in the Amazon VPC User Guide.
+//
+// [Route tables]: https://docs.aws.amazon.com/vpc/latest/userguide/VPC_Route_Tables.html
 func (c *Client) DisassociateRouteTable(ctx context.Context, params *DisassociateRouteTableInput, optFns ...func(*Options)) (*DisassociateRouteTableOutput, error) {
 	if params == nil {
 		params = &DisassociateRouteTableInput{}
@@ -55,9 +55,6 @@ type DisassociateRouteTableOutput struct {
 }
 
 func (c *Client) addOperationDisassociateRouteTableMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpDisassociateRouteTable{}, middleware.After)
 	if err != nil {
 		return err
@@ -66,17 +63,8 @@ func (c *Client) addOperationDisassociateRouteTableMiddlewares(stack *middleware
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DisassociateRouteTable"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -88,16 +76,7 @@ func (c *Client) addOperationDisassociateRouteTableMiddlewares(stack *middleware
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -106,16 +85,13 @@ func (c *Client) addOperationDisassociateRouteTableMiddlewares(stack *middleware
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpDisassociateRouteTableValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDisassociateRouteTable(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DisassociateRouteTable"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -130,13 +106,8 @@ func (c *Client) addOperationDisassociateRouteTableMiddlewares(stack *middleware
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opDisassociateRouteTable(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DisassociateRouteTable",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

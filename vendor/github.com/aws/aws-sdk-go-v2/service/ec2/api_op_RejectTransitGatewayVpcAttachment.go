@@ -4,17 +4,15 @@ package ec2
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Rejects a request to attach a VPC to a transit gateway. The VPC attachment must
-// be in the pendingAcceptance state. Use DescribeTransitGatewayVpcAttachments to
-// view your pending VPC attachment requests. Use AcceptTransitGatewayVpcAttachment
-// to accept a VPC attachment request.
+// Rejects a request to attach a VPC to a transit gateway.
+//
+// The VPC attachment must be in the pendingAcceptance state. Use DescribeTransitGatewayVpcAttachments to view your
+// pending VPC attachment requests. Use AcceptTransitGatewayVpcAttachmentto accept a VPC attachment request.
 func (c *Client) RejectTransitGatewayVpcAttachment(ctx context.Context, params *RejectTransitGatewayVpcAttachmentInput, optFns ...func(*Options)) (*RejectTransitGatewayVpcAttachmentOutput, error) {
 	if params == nil {
 		params = &RejectTransitGatewayVpcAttachmentInput{}
@@ -58,9 +56,6 @@ type RejectTransitGatewayVpcAttachmentOutput struct {
 }
 
 func (c *Client) addOperationRejectTransitGatewayVpcAttachmentMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpRejectTransitGatewayVpcAttachment{}, middleware.After)
 	if err != nil {
 		return err
@@ -69,17 +64,8 @@ func (c *Client) addOperationRejectTransitGatewayVpcAttachmentMiddlewares(stack 
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "RejectTransitGatewayVpcAttachment"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -91,16 +77,7 @@ func (c *Client) addOperationRejectTransitGatewayVpcAttachmentMiddlewares(stack 
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -109,16 +86,13 @@ func (c *Client) addOperationRejectTransitGatewayVpcAttachmentMiddlewares(stack 
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpRejectTransitGatewayVpcAttachmentValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opRejectTransitGatewayVpcAttachment(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "RejectTransitGatewayVpcAttachment"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -133,13 +107,8 @@ func (c *Client) addOperationRejectTransitGatewayVpcAttachmentMiddlewares(stack 
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opRejectTransitGatewayVpcAttachment(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "RejectTransitGatewayVpcAttachment",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

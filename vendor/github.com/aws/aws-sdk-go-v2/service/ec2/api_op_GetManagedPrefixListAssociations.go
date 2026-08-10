@@ -5,7 +5,6 @@ package ec2
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -67,9 +66,6 @@ type GetManagedPrefixListAssociationsOutput struct {
 }
 
 func (c *Client) addOperationGetManagedPrefixListAssociationsMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpGetManagedPrefixListAssociations{}, middleware.After)
 	if err != nil {
 		return err
@@ -78,17 +74,8 @@ func (c *Client) addOperationGetManagedPrefixListAssociationsMiddlewares(stack *
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "GetManagedPrefixListAssociations"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -100,16 +87,7 @@ func (c *Client) addOperationGetManagedPrefixListAssociationsMiddlewares(stack *
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -118,16 +96,13 @@ func (c *Client) addOperationGetManagedPrefixListAssociationsMiddlewares(stack *
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpGetManagedPrefixListAssociationsValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opGetManagedPrefixListAssociations(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "GetManagedPrefixListAssociations"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -142,16 +117,11 @@ func (c *Client) addOperationGetManagedPrefixListAssociationsMiddlewares(stack *
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
+	if err = addInterceptors(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
-
-// GetManagedPrefixListAssociationsAPIClient is a client that implements the
-// GetManagedPrefixListAssociations operation.
-type GetManagedPrefixListAssociationsAPIClient interface {
-	GetManagedPrefixListAssociations(context.Context, *GetManagedPrefixListAssociationsInput, ...func(*Options)) (*GetManagedPrefixListAssociationsOutput, error)
-}
-
-var _ GetManagedPrefixListAssociationsAPIClient = (*Client)(nil)
 
 // GetManagedPrefixListAssociationsPaginatorOptions is the paginator options for
 // GetManagedPrefixListAssociations
@@ -220,6 +190,9 @@ func (p *GetManagedPrefixListAssociationsPaginator) NextPage(ctx context.Context
 	}
 	params.MaxResults = limit
 
+	optFns = append([]func(*Options){
+		addIsPaginatorUserAgent,
+	}, optFns...)
 	result, err := p.client.GetManagedPrefixListAssociations(ctx, &params, optFns...)
 	if err != nil {
 		return nil, err
@@ -239,10 +212,10 @@ func (p *GetManagedPrefixListAssociationsPaginator) NextPage(ctx context.Context
 	return result, nil
 }
 
-func newServiceMetadataMiddleware_opGetManagedPrefixListAssociations(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "GetManagedPrefixListAssociations",
-	}
+// GetManagedPrefixListAssociationsAPIClient is a client that implements the
+// GetManagedPrefixListAssociations operation.
+type GetManagedPrefixListAssociationsAPIClient interface {
+	GetManagedPrefixListAssociations(context.Context, *GetManagedPrefixListAssociationsInput, ...func(*Options)) (*GetManagedPrefixListAssociationsOutput, error)
 }
+
+var _ GetManagedPrefixListAssociationsAPIClient = (*Client)(nil)

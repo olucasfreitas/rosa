@@ -5,20 +5,23 @@ package cloudwatchlogs
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Retrieves a list of the deliveries that have been created in the account. A
-// delivery is a connection between a delivery source  (https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutDeliverySource.html)
-// and a delivery destination  (https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutDeliveryDestination.html)
-// . A delivery source represents an Amazon Web Services resource that sends logs
-// to an logs delivery destination. The destination can be CloudWatch Logs, Amazon
-// S3, or Firehose. Only some Amazon Web Services services support being configured
-// as a delivery source. These services are listed in Enable logging from Amazon
-// Web Services services. (https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/AWS-logs-and-resource-policy.html)
+// Retrieves a list of the deliveries that have been created in the account.
+//
+// A delivery is a connection between a [delivery source] and a [delivery destination].
+//
+// A delivery source represents an Amazon Web Services resource that sends logs to
+// an logs delivery destination. The destination can be CloudWatch Logs, Amazon S3,
+// Firehose or X-Ray. Only some Amazon Web Services services support being
+// configured as a delivery source. These services are listed in [Enable logging from Amazon Web Services services.]
+//
+// [delivery destination]: https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutDeliveryDestination.html
+// [delivery source]: https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_PutDeliverySource.html
+// [Enable logging from Amazon Web Services services.]: https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/AWS-logs-and-resource-policy.html
 func (c *Client) DescribeDeliveries(ctx context.Context, params *DescribeDeliveriesInput, optFns ...func(*Options)) (*DescribeDeliveriesOutput, error) {
 	if params == nil {
 		params = &DescribeDeliveriesInput{}
@@ -61,9 +64,6 @@ type DescribeDeliveriesOutput struct {
 }
 
 func (c *Client) addOperationDescribeDeliveriesMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpDescribeDeliveries{}, middleware.After)
 	if err != nil {
 		return err
@@ -72,17 +72,8 @@ func (c *Client) addOperationDescribeDeliveriesMiddlewares(stack *middleware.Sta
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeDeliveries"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -94,16 +85,7 @@ func (c *Client) addOperationDescribeDeliveriesMiddlewares(stack *middleware.Sta
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -112,13 +94,10 @@ func (c *Client) addOperationDescribeDeliveriesMiddlewares(stack *middleware.Sta
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeDeliveries(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DescribeDeliveries"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -133,16 +112,11 @@ func (c *Client) addOperationDescribeDeliveriesMiddlewares(stack *middleware.Sta
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
+	if err = addInterceptors(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
-
-// DescribeDeliveriesAPIClient is a client that implements the DescribeDeliveries
-// operation.
-type DescribeDeliveriesAPIClient interface {
-	DescribeDeliveries(context.Context, *DescribeDeliveriesInput, ...func(*Options)) (*DescribeDeliveriesOutput, error)
-}
-
-var _ DescribeDeliveriesAPIClient = (*Client)(nil)
 
 // DescribeDeliveriesPaginatorOptions is the paginator options for
 // DescribeDeliveries
@@ -208,6 +182,9 @@ func (p *DescribeDeliveriesPaginator) NextPage(ctx context.Context, optFns ...fu
 	}
 	params.Limit = limit
 
+	optFns = append([]func(*Options){
+		addIsPaginatorUserAgent,
+	}, optFns...)
 	result, err := p.client.DescribeDeliveries(ctx, &params, optFns...)
 	if err != nil {
 		return nil, err
@@ -227,10 +204,10 @@ func (p *DescribeDeliveriesPaginator) NextPage(ctx context.Context, optFns ...fu
 	return result, nil
 }
 
-func newServiceMetadataMiddleware_opDescribeDeliveries(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeDeliveries",
-	}
+// DescribeDeliveriesAPIClient is a client that implements the DescribeDeliveries
+// operation.
+type DescribeDeliveriesAPIClient interface {
+	DescribeDeliveries(context.Context, *DescribeDeliveriesInput, ...func(*Options)) (*DescribeDeliveriesOutput, error)
 }
+
+var _ DescribeDeliveriesAPIClient = (*Client)(nil)

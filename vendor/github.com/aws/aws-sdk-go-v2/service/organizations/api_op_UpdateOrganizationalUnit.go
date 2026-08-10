@@ -4,8 +4,6 @@ package organizations
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -13,8 +11,9 @@ import (
 
 // Renames the specified organizational unit (OU). The ID and ARN don't change.
 // The child OUs and accounts remain in place, and any attached policies of the OU
-// remain attached. This operation can be called only from the organization's
-// management account.
+// remain attached.
+//
+// You can only call this operation from the management account.
 func (c *Client) UpdateOrganizationalUnit(ctx context.Context, params *UpdateOrganizationalUnitInput, optFns ...func(*Options)) (*UpdateOrganizationalUnitOutput, error) {
 	if params == nil {
 		params = &UpdateOrganizationalUnitInput{}
@@ -32,19 +31,24 @@ func (c *Client) UpdateOrganizationalUnit(ctx context.Context, params *UpdateOrg
 
 type UpdateOrganizationalUnitInput struct {
 
-	// The unique identifier (ID) of the OU that you want to rename. You can get the
-	// ID from the ListOrganizationalUnitsForParent operation. The regex pattern (http://wikipedia.org/wiki/regex)
-	// for an organizational unit ID string requires "ou-" followed by from 4 to 32
-	// lowercase letters or digits (the ID of the root that contains the OU). This
+	// ID for the OU that you want to rename. You can get the ID from the ListOrganizationalUnitsForParent operation.
+	//
+	// The [regex pattern] for an organizational unit ID string requires "ou-" followed by from 4 to
+	// 32 lowercase letters or digits (the ID of the root that contains the OU). This
 	// string is followed by a second "-" dash and from 8 to 32 additional lowercase
 	// letters or digits.
+	//
+	// [regex pattern]: http://wikipedia.org/wiki/regex
 	//
 	// This member is required.
 	OrganizationalUnitId *string
 
-	// The new name that you want to assign to the OU. The regex pattern (http://wikipedia.org/wiki/regex)
-	// that is used to validate this parameter is a string of any of the characters in
-	// the ASCII character range.
+	// The new name that you want to assign to the OU.
+	//
+	// The [regex pattern] that is used to validate this parameter is a string of any of the
+	// characters in the ASCII character range.
+	//
+	// [regex pattern]: http://wikipedia.org/wiki/regex
 	Name *string
 
 	noSmithyDocumentSerde
@@ -63,9 +67,6 @@ type UpdateOrganizationalUnitOutput struct {
 }
 
 func (c *Client) addOperationUpdateOrganizationalUnitMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpUpdateOrganizationalUnit{}, middleware.After)
 	if err != nil {
 		return err
@@ -74,17 +75,8 @@ func (c *Client) addOperationUpdateOrganizationalUnitMiddlewares(stack *middlewa
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "UpdateOrganizationalUnit"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -96,16 +88,7 @@ func (c *Client) addOperationUpdateOrganizationalUnitMiddlewares(stack *middlewa
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -114,16 +97,13 @@ func (c *Client) addOperationUpdateOrganizationalUnitMiddlewares(stack *middlewa
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpUpdateOrganizationalUnitValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opUpdateOrganizationalUnit(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "UpdateOrganizationalUnit"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -138,13 +118,8 @@ func (c *Client) addOperationUpdateOrganizationalUnitMiddlewares(stack *middlewa
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opUpdateOrganizationalUnit(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "UpdateOrganizationalUnit",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

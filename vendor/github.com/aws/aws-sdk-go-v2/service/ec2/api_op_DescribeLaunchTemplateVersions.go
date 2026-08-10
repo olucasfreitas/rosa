@@ -5,7 +5,6 @@ package ec2
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -39,38 +38,63 @@ type DescribeLaunchTemplateVersionsInput struct {
 	DryRun *bool
 
 	// One or more filters.
+	//
 	//   - create-time - The time the launch template version was created.
+	//
 	//   - ebs-optimized - A boolean that indicates whether the instance is optimized
 	//   for Amazon EBS I/O.
+	//
 	//   - http-endpoint - Indicates whether the HTTP metadata endpoint on your
 	//   instances is enabled ( enabled | disabled ).
+	//
 	//   - http-protocol-ipv4 - Indicates whether the IPv4 endpoint for the instance
 	//   metadata service is enabled ( enabled | disabled ).
+	//
 	//   - host-resource-group-arn - The ARN of the host resource group in which to
 	//   launch the instances.
+	//
 	//   - http-tokens - The state of token usage for your instance metadata requests (
 	//   optional | required ).
+	//
 	//   - iam-instance-profile - The ARN of the IAM instance profile.
+	//
 	//   - image-id - The ID of the AMI.
+	//
 	//   - instance-type - The instance type.
+	//
 	//   - is-default-version - A boolean that indicates whether the launch template
 	//   version is the default version.
+	//
 	//   - kernel-id - The kernel ID.
+	//
 	//   - license-configuration-arn - The ARN of the license configuration.
+	//
 	//   - network-card-index - The index of the network card.
+	//
 	//   - ram-disk-id - The RAM disk ID.
 	Filters []types.Filter
 
-	// The ID of the launch template. To describe one or more versions of a specified
-	// launch template, you must specify either the launch template ID or the launch
-	// template name, but not both. To describe all the latest or default launch
-	// template versions in your account, you must omit this parameter.
+	// Indicates whether to include managed resources in the output. If this parameter
+	// is set to true , the output includes resources that are managed by Amazon Web
+	// Services services, even if managed resource visibility is set to hidden.
+	IncludeManagedResources *bool
+
+	// The ID of the launch template.
+	//
+	// To describe one or more versions of a specified launch template, you must
+	// specify either the launch template ID or the launch template name, but not both.
+	//
+	// To describe all the latest or default launch template versions in your account,
+	// you must omit this parameter.
 	LaunchTemplateId *string
 
-	// The name of the launch template. To describe one or more versions of a
-	// specified launch template, you must specify either the launch template name or
-	// the launch template ID, but not both. To describe all the latest or default
-	// launch template versions in your account, you must omit this parameter.
+	// The name of the launch template.
+	//
+	// To describe one or more versions of a specified launch template, you must
+	// specify either the launch template name or the launch template ID, but not both.
+	//
+	// To describe all the latest or default launch template versions in your account,
+	// you must omit this parameter.
 	LaunchTemplateName *string
 
 	// The maximum number of results to return in a single call. To retrieve the
@@ -88,21 +112,30 @@ type DescribeLaunchTemplateVersionsInput struct {
 	NextToken *string
 
 	// If true , and if a Systems Manager parameter is specified for ImageId , the AMI
-	// ID is displayed in the response for imageId . If false , and if a Systems
-	// Manager parameter is specified for ImageId , the parameter is displayed in the
-	// response for imageId . For more information, see Use a Systems Manager
-	// parameter instead of an AMI ID (https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-launch-templates.html#use-an-ssm-parameter-instead-of-an-ami-id)
-	// in the Amazon Elastic Compute Cloud User Guide. Default: false
+	// ID is displayed in the response for imageId .
+	//
+	// If false , and if a Systems Manager parameter is specified for ImageId , the
+	// parameter is displayed in the response for imageId .
+	//
+	// For more information, see [Use a Systems Manager parameter instead of an AMI ID] in the Amazon EC2 User Guide.
+	//
+	// Default: false
+	//
+	// [Use a Systems Manager parameter instead of an AMI ID]: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/create-launch-template.html#use-an-ssm-parameter-instead-of-an-ami-id
 	ResolveAlias *bool
 
 	// One or more versions of the launch template. Valid values depend on whether you
 	// are describing a specified launch template (by ID or name) or all launch
-	// templates in your account. To describe one or more versions of a specified
-	// launch template, valid values are $Latest , $Default , and numbers. To describe
-	// all launch templates in your account that are defined as the latest version, the
-	// valid value is $Latest . To describe all launch templates in your account that
-	// are defined as the default version, the valid value is $Default . You can
-	// specify $Latest and $Default in the same request. You cannot specify numbers.
+	// templates in your account.
+	//
+	// To describe one or more versions of a specified launch template, valid values
+	// are $Latest , $Default , and numbers.
+	//
+	// To describe all launch templates in your account that are defined as the latest
+	// version, the valid value is $Latest . To describe all launch templates in your
+	// account that are defined as the default version, the valid value is $Default .
+	// You can specify $Latest and $Default in the same request. You cannot specify
+	// numbers.
 	Versions []string
 
 	noSmithyDocumentSerde
@@ -124,9 +157,6 @@ type DescribeLaunchTemplateVersionsOutput struct {
 }
 
 func (c *Client) addOperationDescribeLaunchTemplateVersionsMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpDescribeLaunchTemplateVersions{}, middleware.After)
 	if err != nil {
 		return err
@@ -135,17 +165,8 @@ func (c *Client) addOperationDescribeLaunchTemplateVersionsMiddlewares(stack *mi
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeLaunchTemplateVersions"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -157,16 +178,7 @@ func (c *Client) addOperationDescribeLaunchTemplateVersionsMiddlewares(stack *mi
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -175,13 +187,10 @@ func (c *Client) addOperationDescribeLaunchTemplateVersionsMiddlewares(stack *mi
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeLaunchTemplateVersions(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DescribeLaunchTemplateVersions"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -196,16 +205,11 @@ func (c *Client) addOperationDescribeLaunchTemplateVersionsMiddlewares(stack *mi
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
+	if err = addInterceptors(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
-
-// DescribeLaunchTemplateVersionsAPIClient is a client that implements the
-// DescribeLaunchTemplateVersions operation.
-type DescribeLaunchTemplateVersionsAPIClient interface {
-	DescribeLaunchTemplateVersions(context.Context, *DescribeLaunchTemplateVersionsInput, ...func(*Options)) (*DescribeLaunchTemplateVersionsOutput, error)
-}
-
-var _ DescribeLaunchTemplateVersionsAPIClient = (*Client)(nil)
 
 // DescribeLaunchTemplateVersionsPaginatorOptions is the paginator options for
 // DescribeLaunchTemplateVersions
@@ -275,6 +279,9 @@ func (p *DescribeLaunchTemplateVersionsPaginator) NextPage(ctx context.Context, 
 	}
 	params.MaxResults = limit
 
+	optFns = append([]func(*Options){
+		addIsPaginatorUserAgent,
+	}, optFns...)
 	result, err := p.client.DescribeLaunchTemplateVersions(ctx, &params, optFns...)
 	if err != nil {
 		return nil, err
@@ -294,10 +301,10 @@ func (p *DescribeLaunchTemplateVersionsPaginator) NextPage(ctx context.Context, 
 	return result, nil
 }
 
-func newServiceMetadataMiddleware_opDescribeLaunchTemplateVersions(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeLaunchTemplateVersions",
-	}
+// DescribeLaunchTemplateVersionsAPIClient is a client that implements the
+// DescribeLaunchTemplateVersions operation.
+type DescribeLaunchTemplateVersionsAPIClient interface {
+	DescribeLaunchTemplateVersions(context.Context, *DescribeLaunchTemplateVersionsInput, ...func(*Options)) (*DescribeLaunchTemplateVersionsOutput, error)
 }
+
+var _ DescribeLaunchTemplateVersionsAPIClient = (*Client)(nil)

@@ -5,20 +5,21 @@ package organizations
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/organizations/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 // Retrieves the list of all policies in an organization of a specified type.
-// Always check the NextToken response parameter for a null value when calling a
-// List* operation. These operations can occasionally return an empty set of
-// results even when there are more results available. The NextToken response
-// parameter value is null only when there are no more results to display. This
-// operation can be called only from the organization's management account or by a
-// member account that is a delegated administrator for an Amazon Web Services
-// service.
+//
+// When calling List* operations, always check the NextToken response parameter
+// value, even if you receive an empty result set. These operations can
+// occasionally return an empty set of results even when more results are
+// available. Continue making requests until NextToken returns null. A null
+// NextToken value indicates that you have retrieved all available results.
+//
+// You can only call this operation from the management account or a member
+// account that is a delegated administrator.
 func (c *Client) ListPolicies(ctx context.Context, params *ListPoliciesInput, optFns ...func(*Options)) (*ListPoliciesOutput, error) {
 	if params == nil {
 		params = &ListPoliciesInput{}
@@ -38,23 +39,53 @@ type ListPoliciesInput struct {
 
 	// Specifies the type of policy that you want to include in the response. You must
 	// specify one of the following values:
-	//   - AISERVICES_OPT_OUT_POLICY (https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_ai-opt-out.html)
-	//   - BACKUP_POLICY (https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_backup.html)
-	//   - SERVICE_CONTROL_POLICY (https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scp.html)
-	//   - TAG_POLICY (https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_tag-policies.html)
+	//
+	// [SERVICE_CONTROL_POLICY]
+	//
+	// [RESOURCE_CONTROL_POLICY]
+	//
+	// [DECLARATIVE_POLICY_EC2]
+	//
+	// [BACKUP_POLICY]
+	//
+	// [TAG_POLICY]
+	//
+	// [CHATBOT_POLICY]
+	//
+	// [AISERVICES_OPT_OUT_POLICY]
+	//
+	// [SECURITYHUB_POLICY]
+	//
+	// [UPGRADE_ROLLOUT_POLICY]
+	//
+	// [INSPECTOR_POLICY]
+	//
+	// [BEDROCK_POLICY]
+	//
+	// [S3_POLICY]
+	//
+	// [NETWORK_SECURITY_DIRECTOR_POLICY]
+	//
+	// [BEDROCK_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_bedrock.html
+	// [NETWORK_SECURITY_DIRECTOR_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_network_security_director.html
+	// [UPGRADE_ROLLOUT_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_upgrade_rollout.html
+	// [BACKUP_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_backup.html
+	// [CHATBOT_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_chatbot.html
+	// [TAG_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_tag-policies.html
+	// [INSPECTOR_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_inspector.html
+	// [S3_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_s3.html
+	// [RESOURCE_CONTROL_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_rcps.html
+	// [AISERVICES_OPT_OUT_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_ai-opt-out.html
+	// [SECURITYHUB_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_security_hub.html
+	// [SERVICE_CONTROL_POLICY]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scp.html
+	// [DECLARATIVE_POLICY_EC2]: https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_declarative.html
 	//
 	// This member is required.
 	Filter types.PolicyType
 
-	// The total number of results that you want included on each page of the
-	// response. If you do not include this parameter, it defaults to a value that is
-	// specific to the operation. If additional items exist beyond the maximum you
-	// specify, the NextToken response element is present and has a value (is not
-	// null). Include that value as the NextToken request parameter in the next call
-	// to the operation to get the next part of the results. Note that Organizations
-	// might return fewer results than the maximum even when there are more results
-	// available. You should check NextToken after every operation to ensure that you
-	// receive all of the results.
+	// The maximum number of items to return in the response. If more results exist
+	// than the specified MaxResults value, a token is included in the response so
+	// that you can retrieve the remaining results.
 	MaxResults *int32
 
 	// The parameter for receiving additional results if you receive a NextToken
@@ -75,8 +106,7 @@ type ListPoliciesOutput struct {
 	NextToken *string
 
 	// A list of policies that match the filter criteria in the request. The output
-	// list doesn't include the policy contents. To see the content for a policy, see
-	// DescribePolicy .
+	// list doesn't include the policy contents. To see the content for a policy, see DescribePolicy.
 	Policies []types.PolicySummary
 
 	// Metadata pertaining to the operation's result.
@@ -86,9 +116,6 @@ type ListPoliciesOutput struct {
 }
 
 func (c *Client) addOperationListPoliciesMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpListPolicies{}, middleware.After)
 	if err != nil {
 		return err
@@ -97,17 +124,8 @@ func (c *Client) addOperationListPoliciesMiddlewares(stack *middleware.Stack, op
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "ListPolicies"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -119,16 +137,7 @@ func (c *Client) addOperationListPoliciesMiddlewares(stack *middleware.Stack, op
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -137,16 +146,13 @@ func (c *Client) addOperationListPoliciesMiddlewares(stack *middleware.Stack, op
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpListPoliciesValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opListPolicies(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "ListPolicies"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -161,27 +167,17 @@ func (c *Client) addOperationListPoliciesMiddlewares(stack *middleware.Stack, op
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
+	if err = addInterceptors(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
 
-// ListPoliciesAPIClient is a client that implements the ListPolicies operation.
-type ListPoliciesAPIClient interface {
-	ListPolicies(context.Context, *ListPoliciesInput, ...func(*Options)) (*ListPoliciesOutput, error)
-}
-
-var _ ListPoliciesAPIClient = (*Client)(nil)
-
 // ListPoliciesPaginatorOptions is the paginator options for ListPolicies
 type ListPoliciesPaginatorOptions struct {
-	// The total number of results that you want included on each page of the
-	// response. If you do not include this parameter, it defaults to a value that is
-	// specific to the operation. If additional items exist beyond the maximum you
-	// specify, the NextToken response element is present and has a value (is not
-	// null). Include that value as the NextToken request parameter in the next call
-	// to the operation to get the next part of the results. Note that Organizations
-	// might return fewer results than the maximum even when there are more results
-	// available. You should check NextToken after every operation to ensure that you
-	// receive all of the results.
+	// The maximum number of items to return in the response. If more results exist
+	// than the specified MaxResults value, a token is included in the response so
+	// that you can retrieve the remaining results.
 	Limit int32
 
 	// Set to true if pagination should stop if the service returns a pagination token
@@ -242,6 +238,9 @@ func (p *ListPoliciesPaginator) NextPage(ctx context.Context, optFns ...func(*Op
 	}
 	params.MaxResults = limit
 
+	optFns = append([]func(*Options){
+		addIsPaginatorUserAgent,
+	}, optFns...)
 	result, err := p.client.ListPolicies(ctx, &params, optFns...)
 	if err != nil {
 		return nil, err
@@ -261,10 +260,9 @@ func (p *ListPoliciesPaginator) NextPage(ctx context.Context, optFns ...func(*Op
 	return result, nil
 }
 
-func newServiceMetadataMiddleware_opListPolicies(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "ListPolicies",
-	}
+// ListPoliciesAPIClient is a client that implements the ListPolicies operation.
+type ListPoliciesAPIClient interface {
+	ListPolicies(context.Context, *ListPoliciesInput, ...func(*Options)) (*ListPoliciesOutput, error)
 }
+
+var _ ListPoliciesAPIClient = (*Client)(nil)

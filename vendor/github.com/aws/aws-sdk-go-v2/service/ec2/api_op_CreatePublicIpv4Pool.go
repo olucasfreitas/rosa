@@ -4,8 +4,6 @@ package ec2
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -14,9 +12,9 @@ import (
 // Creates a public IPv4 address pool. A public IPv4 pool is an EC2 IP address
 // pool required for the public IPv4 CIDRs that you own and bring to Amazon Web
 // Services to manage with IPAM. IPv6 addresses you bring to Amazon Web Services,
-// however, use IPAM pools only. To monitor the status of pool creation, use
-// DescribePublicIpv4Pools (https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribePublicIpv4Pools.html)
-// .
+// however, use IPAM pools only. To monitor the status of pool creation, use [DescribePublicIpv4Pools].
+//
+// [DescribePublicIpv4Pools]: https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribePublicIpv4Pools.html
 func (c *Client) CreatePublicIpv4Pool(ctx context.Context, params *CreatePublicIpv4PoolInput, optFns ...func(*Options)) (*CreatePublicIpv4PoolOutput, error) {
 	if params == nil {
 		params = &CreatePublicIpv4PoolInput{}
@@ -40,6 +38,14 @@ type CreatePublicIpv4PoolInput struct {
 	// UnauthorizedOperation .
 	DryRun *bool
 
+	// The Availability Zone (AZ) or Local Zone (LZ) network border group that the
+	// resource that the IP address is assigned to is in. Defaults to an AZ network
+	// border group. For more information on available Local Zones, see [Local Zone availability]in the Amazon
+	// EC2 User Guide.
+	//
+	// [Local Zone availability]: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-byoip.html#byoip-zone-avail
+	NetworkBorderGroup *string
+
 	// The key/value combination of a tag assigned to the resource. Use the tag key in
 	// the filter name and the tag value as the filter value. For example, to find all
 	// resources that have a tag with the key Owner and the value TeamA , specify
@@ -61,9 +67,6 @@ type CreatePublicIpv4PoolOutput struct {
 }
 
 func (c *Client) addOperationCreatePublicIpv4PoolMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpCreatePublicIpv4Pool{}, middleware.After)
 	if err != nil {
 		return err
@@ -72,17 +75,8 @@ func (c *Client) addOperationCreatePublicIpv4PoolMiddlewares(stack *middleware.S
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "CreatePublicIpv4Pool"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -94,16 +88,7 @@ func (c *Client) addOperationCreatePublicIpv4PoolMiddlewares(stack *middleware.S
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -112,13 +97,10 @@ func (c *Client) addOperationCreatePublicIpv4PoolMiddlewares(stack *middleware.S
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opCreatePublicIpv4Pool(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "CreatePublicIpv4Pool"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -133,13 +115,8 @@ func (c *Client) addOperationCreatePublicIpv4PoolMiddlewares(stack *middleware.S
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opCreatePublicIpv4Pool(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "CreatePublicIpv4Pool",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

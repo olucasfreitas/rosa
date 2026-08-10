@@ -4,8 +4,6 @@ package cloudwatchlogs
 
 import (
 	"context"
-	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -13,9 +11,10 @@ import (
 
 // This operation returns a paginated list of your saved CloudWatch Logs Insights
 // query definitions. You can retrieve query definitions from the current account
-// or from a source account that is linked to the current account. You can use the
-// queryDefinitionNamePrefix parameter to limit the results to only the query
-// definitions that have names that start with a certain string.
+// or from a source account that is linked to the current account.
+//
+// You can use the queryDefinitionNamePrefix parameter to limit the results to
+// only the query definitions that have names that start with a certain string.
 func (c *Client) DescribeQueryDefinitions(ctx context.Context, params *DescribeQueryDefinitionsInput, optFns ...func(*Options)) (*DescribeQueryDefinitionsOutput, error) {
 	if params == nil {
 		params = &DescribeQueryDefinitionsInput{}
@@ -43,6 +42,12 @@ type DescribeQueryDefinitionsInput struct {
 	// have names that start with the prefix you specify.
 	QueryDefinitionNamePrefix *string
 
+	// The query language used for this query. For more information about the query
+	// languages that CloudWatch Logs supports, see [Supported query languages].
+	//
+	// [Supported query languages]: https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/CWL_AnalyzeLogData_Languages.html
+	QueryLanguage types.QueryLanguage
+
 	noSmithyDocumentSerde
 }
 
@@ -61,9 +66,6 @@ type DescribeQueryDefinitionsOutput struct {
 }
 
 func (c *Client) addOperationDescribeQueryDefinitionsMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsAwsjson11_serializeOpDescribeQueryDefinitions{}, middleware.After)
 	if err != nil {
 		return err
@@ -72,17 +74,8 @@ func (c *Client) addOperationDescribeQueryDefinitionsMiddlewares(stack *middlewa
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeQueryDefinitions"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -94,16 +87,7 @@ func (c *Client) addOperationDescribeQueryDefinitionsMiddlewares(stack *middlewa
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -112,13 +96,10 @@ func (c *Client) addOperationDescribeQueryDefinitionsMiddlewares(stack *middlewa
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeQueryDefinitions(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DescribeQueryDefinitions"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -133,13 +114,8 @@ func (c *Client) addOperationDescribeQueryDefinitionsMiddlewares(stack *middlewa
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
-	return nil
-}
-
-func newServiceMetadataMiddleware_opDescribeQueryDefinitions(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeQueryDefinitions",
+	if err = addInterceptors(stack, options); err != nil {
+		return err
 	}
+	return nil
 }

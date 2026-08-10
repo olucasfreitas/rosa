@@ -5,7 +5,6 @@ package ec2
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -41,8 +40,9 @@ type ModifyVerifiedAccessInstanceLoggingConfigurationInput struct {
 	VerifiedAccessInstanceId *string
 
 	// A unique, case-sensitive token that you provide to ensure idempotency of your
-	// modification request. For more information, see Ensuring Idempotency (https://docs.aws.amazon.com/AWSEC2/latest/APIReference/Run_Instance_Idempotency.html)
-	// .
+	// modification request. For more information, see [Ensuring idempotency].
+	//
+	// [Ensuring idempotency]: https://docs.aws.amazon.com/ec2/latest/devguide/ec2-api-idempotency.html
 	ClientToken *string
 
 	// Checks whether you have the required permissions for the action, without
@@ -66,9 +66,6 @@ type ModifyVerifiedAccessInstanceLoggingConfigurationOutput struct {
 }
 
 func (c *Client) addOperationModifyVerifiedAccessInstanceLoggingConfigurationMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpModifyVerifiedAccessInstanceLoggingConfiguration{}, middleware.After)
 	if err != nil {
 		return err
@@ -77,17 +74,8 @@ func (c *Client) addOperationModifyVerifiedAccessInstanceLoggingConfigurationMid
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "ModifyVerifiedAccessInstanceLoggingConfiguration"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -99,16 +87,7 @@ func (c *Client) addOperationModifyVerifiedAccessInstanceLoggingConfigurationMid
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -117,7 +96,7 @@ func (c *Client) addOperationModifyVerifiedAccessInstanceLoggingConfigurationMid
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addIdempotencyToken_opModifyVerifiedAccessInstanceLoggingConfigurationMiddleware(stack, options); err != nil {
@@ -126,10 +105,7 @@ func (c *Client) addOperationModifyVerifiedAccessInstanceLoggingConfigurationMid
 	if err = addOpModifyVerifiedAccessInstanceLoggingConfigurationValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opModifyVerifiedAccessInstanceLoggingConfiguration(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "ModifyVerifiedAccessInstanceLoggingConfiguration"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -142,6 +118,9 @@ func (c *Client) addOperationModifyVerifiedAccessInstanceLoggingConfigurationMid
 		return err
 	}
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
+		return err
+	}
+	if err = addInterceptors(stack, options); err != nil {
 		return err
 	}
 	return nil
@@ -178,12 +157,4 @@ func (m *idempotencyToken_initializeOpModifyVerifiedAccessInstanceLoggingConfigu
 }
 func addIdempotencyToken_opModifyVerifiedAccessInstanceLoggingConfigurationMiddleware(stack *middleware.Stack, cfg Options) error {
 	return stack.Initialize.Add(&idempotencyToken_initializeOpModifyVerifiedAccessInstanceLoggingConfiguration{tokenProvider: cfg.IdempotencyTokenProvider}, middleware.Before)
-}
-
-func newServiceMetadataMiddleware_opModifyVerifiedAccessInstanceLoggingConfiguration(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "ModifyVerifiedAccessInstanceLoggingConfiguration",
-	}
 }

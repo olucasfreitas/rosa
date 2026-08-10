@@ -5,7 +5,6 @@ package ec2
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -30,15 +29,20 @@ func (c *Client) DescribeHostReservations(ctx context.Context, params *DescribeH
 type DescribeHostReservationsInput struct {
 
 	// The filters.
+	//
 	//   - instance-family - The instance family (for example, m4 ).
+	//
 	//   - payment-option - The payment option ( NoUpfront | PartialUpfront |
 	//   AllUpfront ).
+	//
 	//   - state - The state of the reservation ( payment-pending | payment-failed |
 	//   active | retired ).
+	//
 	//   - tag: - The key/value combination of a tag assigned to the resource. Use the
 	//   tag key in the filter name and the tag value as the filter value. For example,
 	//   to find all resources that have a tag with the key Owner and the value TeamA ,
 	//   specify tag:Owner for the filter name and TeamA for the filter value.
+	//
 	//   - tag-key - The key of a tag assigned to the resource. Use this filter to find
 	//   all resources assigned a tag with a specific key, regardless of the tag value.
 	Filter []types.Filter
@@ -74,9 +78,6 @@ type DescribeHostReservationsOutput struct {
 }
 
 func (c *Client) addOperationDescribeHostReservationsMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpDescribeHostReservations{}, middleware.After)
 	if err != nil {
 		return err
@@ -85,17 +86,8 @@ func (c *Client) addOperationDescribeHostReservationsMiddlewares(stack *middlewa
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeHostReservations"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -107,16 +99,7 @@ func (c *Client) addOperationDescribeHostReservationsMiddlewares(stack *middlewa
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -125,13 +108,10 @@ func (c *Client) addOperationDescribeHostReservationsMiddlewares(stack *middlewa
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeHostReservations(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DescribeHostReservations"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -146,16 +126,11 @@ func (c *Client) addOperationDescribeHostReservationsMiddlewares(stack *middlewa
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
+	if err = addInterceptors(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
-
-// DescribeHostReservationsAPIClient is a client that implements the
-// DescribeHostReservations operation.
-type DescribeHostReservationsAPIClient interface {
-	DescribeHostReservations(context.Context, *DescribeHostReservationsInput, ...func(*Options)) (*DescribeHostReservationsOutput, error)
-}
-
-var _ DescribeHostReservationsAPIClient = (*Client)(nil)
 
 // DescribeHostReservationsPaginatorOptions is the paginator options for
 // DescribeHostReservations
@@ -225,6 +200,9 @@ func (p *DescribeHostReservationsPaginator) NextPage(ctx context.Context, optFns
 	}
 	params.MaxResults = limit
 
+	optFns = append([]func(*Options){
+		addIsPaginatorUserAgent,
+	}, optFns...)
 	result, err := p.client.DescribeHostReservations(ctx, &params, optFns...)
 	if err != nil {
 		return nil, err
@@ -244,10 +222,10 @@ func (p *DescribeHostReservationsPaginator) NextPage(ctx context.Context, optFns
 	return result, nil
 }
 
-func newServiceMetadataMiddleware_opDescribeHostReservations(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeHostReservations",
-	}
+// DescribeHostReservationsAPIClient is a client that implements the
+// DescribeHostReservations operation.
+type DescribeHostReservationsAPIClient interface {
+	DescribeHostReservations(context.Context, *DescribeHostReservationsInput, ...func(*Options)) (*DescribeHostReservationsOutput, error)
 }
+
+var _ DescribeHostReservationsAPIClient = (*Client)(nil)

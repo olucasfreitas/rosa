@@ -1,6 +1,13 @@
 # Contributing to ROSA
 Welcome, and thank you for considering to contribute to ROSA.
-Before you begin, or have more questions reach out to us on [Slack @rosa-cli](https://redhat.enterprise.slack.com/archives/CB53T9ZHQ)
+
+## Communication
+
+For internal Red Hat contributors: post your PR link and Jira story in `#forum-rosa-service-engineering` and ping `@rosa-cli-tf-devs` on Red Hat Slack.
+
+## Design source of truth
+
+The ROSA CLI is the design source of truth for all downstream projects (terraform-provider-rhcs, terraform-rhcs-rosa-classic, terraform-rhcs-rosa-hcp). New features and API changes should land here first.
 
 ## AI-Assisted Contributions
 
@@ -68,7 +75,29 @@ make rosa
 make lint
 make coverage-changed-files
 make test
+make govulncheck
 ```
+
+`make govulncheck` scans the module for known Go vulnerabilities using the pinned
+[govulncheck](https://go.dev/doc/security/vuln/) tool. It runs two passes:
+
+- **Source mode** (`./...`) for reachable dependency CVEs in the codebase (including tests).
+- **Binary mode** (`./rosa`) for stdlib/toolchain CVEs in the compiled CLI artifact.
+
+The check is enforced by the optional Prow presubmit `govulncheck` and is **not** part of
+`pre-push-checks`. It complements the optional Snyk `security` presubmit.
+
+When a vulnerability has no fix available, or a fix cannot be adopted yet (for example
+a stdlib fix that requires a newer Go toolchain), add an entry to `.govulncheck-ignore.yaml`
+with the GO ID, exact module path, and reason. Remove entries once the fix is adopted.
+
+The ignore wrapper requires `jq` to parse govulncheck JSON output. The OCP builder image
+used by ROSA Prow jobs (`container: from: src`) does not include `jq`; `make govulncheck`
+downloads a static `jq` binary (currently pinned in `hack/govulncheck.sh`, monitored by
+Renovate) into a private `mktemp` directory when it is not already on `PATH`, and verifies the
+download against the upstream `sha256sum.txt` for that release. For local runs, install `jq`
+or rely on that bootstrap. `yq` is optional; the wrapper falls back to awk when `yq` is not
+installed.
 
 Commit message checks are performed by the `commit-msg` hook during commits.
 
@@ -125,6 +154,9 @@ Types other than `fix:` and `feat:` are allowed:
 - `refactor`: A code change that neither fixes a bug nor adds a feature
 - `style`: Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)
 - `test`: Adding missing tests or correcting existing tests
+
+[!IMPORTANT]
+DCO Sign-off Required: Every commit must include a Developer Certificate of Origin (DCO) sign-off line (Signed-off-by: Name <email>). Use git commit -s when committing.
 
 ## Release Process and Changelog Automation
 
@@ -198,6 +230,9 @@ configured in https://github.com/openshift/release repo.
 
 `.golangciversion` file is read by the `lint` job commands there:
 https://github.com/openshift/release/blob/master/ci-operator/config/openshift/rosa/openshift-rosa-master.yaml
+
+The `govulncheck` presubmit runs `make govulncheck` and is optional while the check is
+being rolled out. Trigger it manually with `/test govulncheck`.
 
 # Style Guide
 

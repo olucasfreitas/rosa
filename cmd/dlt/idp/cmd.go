@@ -32,7 +32,7 @@ import (
 var Cmd = &cobra.Command{
 	Use:     "idp ID",
 	Aliases: []string{"idps"},
-	Short:   "Delete cluster IDPs",
+	Short:   "Delete cluster identity providers (IDPs)",
 	Long:    "Delete a specific identity provider for a cluster.",
 	Example: `  # Delete an identity provider named github-1
   rosa delete idp github-1 --cluster=mycluster`,
@@ -40,7 +40,7 @@ var Cmd = &cobra.Command{
 	Args: func(_ *cobra.Command, argv []string) error {
 		if len(argv) != 1 {
 			return fmt.Errorf(
-				"Expected exactly one command line parameter containing the name of the identity provider",
+				"expected exactly one command line parameter containing the name of the identity provider",
 			)
 		}
 		return nil

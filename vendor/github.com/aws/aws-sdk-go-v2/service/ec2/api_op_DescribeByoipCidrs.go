@@ -5,16 +5,13 @@ package ec2
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
-// Describes the IP address ranges that were specified in calls to
-// ProvisionByoipCidr . To describe the address pools that were created when you
-// provisioned the address ranges, use DescribePublicIpv4Pools or DescribeIpv6Pools
-// .
+// Describes the IP address ranges that were provisioned for use with Amazon Web
+// Services resources through through bring your own IP addresses (BYOIP).
 func (c *Client) DescribeByoipCidrs(ctx context.Context, params *DescribeByoipCidrsInput, optFns ...func(*Options)) (*DescribeByoipCidrsOutput, error) {
 	if params == nil {
 		params = &DescribeByoipCidrsInput{}
@@ -66,9 +63,6 @@ type DescribeByoipCidrsOutput struct {
 }
 
 func (c *Client) addOperationDescribeByoipCidrsMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpDescribeByoipCidrs{}, middleware.After)
 	if err != nil {
 		return err
@@ -77,17 +71,8 @@ func (c *Client) addOperationDescribeByoipCidrsMiddlewares(stack *middleware.Sta
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeByoipCidrs"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -99,16 +84,7 @@ func (c *Client) addOperationDescribeByoipCidrsMiddlewares(stack *middleware.Sta
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -117,16 +93,13 @@ func (c *Client) addOperationDescribeByoipCidrsMiddlewares(stack *middleware.Sta
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
 	if err = addOpDescribeByoipCidrsValidationMiddleware(stack); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeByoipCidrs(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DescribeByoipCidrs"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -141,16 +114,11 @@ func (c *Client) addOperationDescribeByoipCidrsMiddlewares(stack *middleware.Sta
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
+	if err = addInterceptors(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
-
-// DescribeByoipCidrsAPIClient is a client that implements the DescribeByoipCidrs
-// operation.
-type DescribeByoipCidrsAPIClient interface {
-	DescribeByoipCidrs(context.Context, *DescribeByoipCidrsInput, ...func(*Options)) (*DescribeByoipCidrsOutput, error)
-}
-
-var _ DescribeByoipCidrsAPIClient = (*Client)(nil)
 
 // DescribeByoipCidrsPaginatorOptions is the paginator options for
 // DescribeByoipCidrs
@@ -217,6 +185,9 @@ func (p *DescribeByoipCidrsPaginator) NextPage(ctx context.Context, optFns ...fu
 	}
 	params.MaxResults = limit
 
+	optFns = append([]func(*Options){
+		addIsPaginatorUserAgent,
+	}, optFns...)
 	result, err := p.client.DescribeByoipCidrs(ctx, &params, optFns...)
 	if err != nil {
 		return nil, err
@@ -236,10 +207,10 @@ func (p *DescribeByoipCidrsPaginator) NextPage(ctx context.Context, optFns ...fu
 	return result, nil
 }
 
-func newServiceMetadataMiddleware_opDescribeByoipCidrs(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeByoipCidrs",
-	}
+// DescribeByoipCidrsAPIClient is a client that implements the DescribeByoipCidrs
+// operation.
+type DescribeByoipCidrsAPIClient interface {
+	DescribeByoipCidrs(context.Context, *DescribeByoipCidrsInput, ...func(*Options)) (*DescribeByoipCidrsOutput, error)
 }
+
+var _ DescribeByoipCidrsAPIClient = (*Client)(nil)

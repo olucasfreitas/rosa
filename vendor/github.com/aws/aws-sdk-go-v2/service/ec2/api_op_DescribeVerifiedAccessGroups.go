@@ -5,7 +5,6 @@ package ec2
 import (
 	"context"
 	"fmt"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -70,9 +69,6 @@ type DescribeVerifiedAccessGroupsOutput struct {
 }
 
 func (c *Client) addOperationDescribeVerifiedAccessGroupsMiddlewares(stack *middleware.Stack, options Options) (err error) {
-	if err := stack.Serialize.Add(&setOperationInputMiddleware{}, middleware.After); err != nil {
-		return err
-	}
 	err = stack.Serialize.Add(&awsEc2query_serializeOpDescribeVerifiedAccessGroups{}, middleware.After)
 	if err != nil {
 		return err
@@ -81,17 +77,8 @@ func (c *Client) addOperationDescribeVerifiedAccessGroupsMiddlewares(stack *midd
 	if err != nil {
 		return err
 	}
-	if err := addProtocolFinalizerMiddlewares(stack, options, "DescribeVerifiedAccessGroups"); err != nil {
-		return fmt.Errorf("add protocol finalizers: %v", err)
-	}
 
 	if err = addlegacyEndpointContextSetter(stack, options); err != nil {
-		return err
-	}
-	if err = addSetLoggerMiddleware(stack, options); err != nil {
-		return err
-	}
-	if err = addClientRequestID(stack); err != nil {
 		return err
 	}
 	if err = addComputeContentLength(stack); err != nil {
@@ -103,16 +90,7 @@ func (c *Client) addOperationDescribeVerifiedAccessGroupsMiddlewares(stack *midd
 	if err = addComputePayloadSHA256(stack); err != nil {
 		return err
 	}
-	if err = addRetry(stack, options); err != nil {
-		return err
-	}
-	if err = addRawResponseToMetadata(stack); err != nil {
-		return err
-	}
 	if err = addRecordResponseTiming(stack); err != nil {
-		return err
-	}
-	if err = addClientUserAgent(stack, options); err != nil {
 		return err
 	}
 	if err = smithyhttp.AddErrorCloseResponseBodyMiddleware(stack); err != nil {
@@ -121,13 +99,10 @@ func (c *Client) addOperationDescribeVerifiedAccessGroupsMiddlewares(stack *midd
 	if err = smithyhttp.AddCloseResponseBodyMiddleware(stack); err != nil {
 		return err
 	}
-	if err = addSetLegacyContextSigningOptionsMiddleware(stack); err != nil {
+	if err = addCredentialSource(stack, options); err != nil {
 		return err
 	}
-	if err = stack.Initialize.Add(newServiceMetadataMiddleware_opDescribeVerifiedAccessGroups(options.Region), middleware.Before); err != nil {
-		return err
-	}
-	if err = addRecursionDetection(stack); err != nil {
+	if err = stack.Initialize.Add(newServiceMetadataMiddleware(options.Region, "DescribeVerifiedAccessGroups"), middleware.Before); err != nil {
 		return err
 	}
 	if err = addRequestIDRetrieverMiddleware(stack); err != nil {
@@ -142,16 +117,11 @@ func (c *Client) addOperationDescribeVerifiedAccessGroupsMiddlewares(stack *midd
 	if err = addDisableHTTPSMiddleware(stack, options); err != nil {
 		return err
 	}
+	if err = addInterceptors(stack, options); err != nil {
+		return err
+	}
 	return nil
 }
-
-// DescribeVerifiedAccessGroupsAPIClient is a client that implements the
-// DescribeVerifiedAccessGroups operation.
-type DescribeVerifiedAccessGroupsAPIClient interface {
-	DescribeVerifiedAccessGroups(context.Context, *DescribeVerifiedAccessGroupsInput, ...func(*Options)) (*DescribeVerifiedAccessGroupsOutput, error)
-}
-
-var _ DescribeVerifiedAccessGroupsAPIClient = (*Client)(nil)
 
 // DescribeVerifiedAccessGroupsPaginatorOptions is the paginator options for
 // DescribeVerifiedAccessGroups
@@ -220,6 +190,9 @@ func (p *DescribeVerifiedAccessGroupsPaginator) NextPage(ctx context.Context, op
 	}
 	params.MaxResults = limit
 
+	optFns = append([]func(*Options){
+		addIsPaginatorUserAgent,
+	}, optFns...)
 	result, err := p.client.DescribeVerifiedAccessGroups(ctx, &params, optFns...)
 	if err != nil {
 		return nil, err
@@ -239,10 +212,10 @@ func (p *DescribeVerifiedAccessGroupsPaginator) NextPage(ctx context.Context, op
 	return result, nil
 }
 
-func newServiceMetadataMiddleware_opDescribeVerifiedAccessGroups(region string) *awsmiddleware.RegisterServiceMetadata {
-	return &awsmiddleware.RegisterServiceMetadata{
-		Region:        region,
-		ServiceID:     ServiceID,
-		OperationName: "DescribeVerifiedAccessGroups",
-	}
+// DescribeVerifiedAccessGroupsAPIClient is a client that implements the
+// DescribeVerifiedAccessGroups operation.
+type DescribeVerifiedAccessGroupsAPIClient interface {
+	DescribeVerifiedAccessGroups(context.Context, *DescribeVerifiedAccessGroupsInput, ...func(*Options)) (*DescribeVerifiedAccessGroupsOutput, error)
 }
+
+var _ DescribeVerifiedAccessGroupsAPIClient = (*Client)(nil)
