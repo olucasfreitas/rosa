@@ -249,7 +249,7 @@ github.com/evanphx/json-patch/v5
 # github.com/fatih/color v1.7.0
 ## explicit
 github.com/fatih/color
-# github.com/fxamacker/cbor/v2 v2.9.0
+# github.com/fxamacker/cbor/v2 v2.9.1
 ## explicit; go 1.20
 github.com/fxamacker/cbor/v2
 # github.com/go-jose/go-jose/v4 v4.1.4
@@ -347,7 +347,7 @@ github.com/mtibben/percent
 # github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822
 ## explicit
 github.com/munnerz/goautoneg
-# github.com/onsi/ginkgo/v2 v2.32.0
+# github.com/onsi/ginkgo/v2 v2.32.1
 ## explicit; go 1.25.0
 github.com/onsi/ginkgo/v2
 github.com/onsi/ginkgo/v2/config
@@ -374,7 +374,7 @@ github.com/onsi/ginkgo/v2/internal/reporters
 github.com/onsi/ginkgo/v2/internal/testingtproxy
 github.com/onsi/ginkgo/v2/reporters
 github.com/onsi/ginkgo/v2/types
-# github.com/onsi/gomega v1.42.1
+# github.com/onsi/gomega v1.43.0
 ## explicit; go 1.25.0
 github.com/onsi/gomega
 github.com/onsi/gomega/format
@@ -388,7 +388,7 @@ github.com/onsi/gomega/matchers/support/goraph/edge
 github.com/onsi/gomega/matchers/support/goraph/node
 github.com/onsi/gomega/matchers/support/goraph/util
 github.com/onsi/gomega/types
-# github.com/openshift-online/ocm-api-model/clientapi v0.0.463
+# github.com/openshift-online/ocm-api-model/clientapi v0.0.466
 ## explicit; go 1.23.0
 github.com/openshift-online/ocm-api-model/clientapi/accesstransparency/v1
 github.com/openshift-online/ocm-api-model/clientapi/accountsmgmt/v1
@@ -404,7 +404,7 @@ github.com/openshift-online/ocm-api-model/clientapi/servicelogs/v1
 github.com/openshift-online/ocm-api-model/clientapi/servicemgmt/v1
 github.com/openshift-online/ocm-api-model/clientapi/statusboard/v1
 github.com/openshift-online/ocm-api-model/clientapi/webrca/v1
-# github.com/openshift-online/ocm-api-model/model v0.0.461
+# github.com/openshift-online/ocm-api-model/model v0.0.465
 ## explicit; go 1.23.0
 github.com/openshift-online/ocm-api-model/model/access_transparency/v1
 github.com/openshift-online/ocm-api-model/model/accounts_mgmt/v1
@@ -419,7 +419,7 @@ github.com/openshift-online/ocm-api-model/model/service_logs/v1
 github.com/openshift-online/ocm-api-model/model/service_mgmt/v1
 github.com/openshift-online/ocm-api-model/model/status_board/v1
 github.com/openshift-online/ocm-api-model/model/web_rca/v1
-# github.com/openshift-online/ocm-common v0.0.44
+# github.com/openshift-online/ocm-common v0.0.45
 ## explicit; go 1.24.7
 github.com/openshift-online/ocm-common/pkg/aws/aws_client
 github.com/openshift-online/ocm-common/pkg/aws/consts
@@ -443,7 +443,7 @@ github.com/openshift-online/ocm-common/pkg/rosa/operatorroles
 github.com/openshift-online/ocm-common/pkg/test/kms_key
 github.com/openshift-online/ocm-common/pkg/test/vpc_client
 github.com/openshift-online/ocm-common/pkg/utils
-# github.com/openshift-online/ocm-sdk-go v0.1.507
+# github.com/openshift-online/ocm-sdk-go v0.1.510
 ## explicit; go 1.24.0
 github.com/openshift-online/ocm-sdk-go
 github.com/openshift-online/ocm-sdk-go/accesstransparency
@@ -509,8 +509,8 @@ github.com/robfig/cron/v3
 # github.com/russross/blackfriday/v2 v2.1.0
 ## explicit
 github.com/russross/blackfriday/v2
-# github.com/sirupsen/logrus v1.9.4
-## explicit; go 1.17
+# github.com/sirupsen/logrus v1.10.2
+## explicit; go 1.23
 github.com/sirupsen/logrus
 # github.com/skratchdot/open-golang v0.0.0-20200116055534-eef842397966
 ## explicit
@@ -535,13 +535,13 @@ github.com/zgalor/weberr
 # go.uber.org/mock v0.6.0
 ## explicit; go 1.23.0
 go.uber.org/mock/gomock
-# go.yaml.in/yaml/v2 v2.4.3
+# go.yaml.in/yaml/v2 v2.4.4
 ## explicit; go 1.15
 go.yaml.in/yaml/v2
-# go.yaml.in/yaml/v3 v3.0.4
+# go.yaml.in/yaml/v3 v3.0.5
 ## explicit; go 1.16
 go.yaml.in/yaml/v3
-# golang.org/x/crypto v0.54.0
+# golang.org/x/crypto v0.55.0
 ## explicit; go 1.25.0
 golang.org/x/crypto/bcrypt
 golang.org/x/crypto/blowfish
@@ -553,10 +553,10 @@ golang.org/x/crypto/internal/alias
 golang.org/x/crypto/internal/poly1305
 golang.org/x/crypto/ssh
 golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
-# golang.org/x/mod v0.37.0
+# golang.org/x/mod v0.38.0
 ## explicit; go 1.25.0
 golang.org/x/mod/semver
-# golang.org/x/net v0.57.0
+# golang.org/x/net v0.58.0
 ## explicit; go 1.25.0
 golang.org/x/net/html
 golang.org/x/net/html/atom
@@ -584,7 +584,7 @@ golang.org/x/sys/windows
 # golang.org/x/term v0.45.0
 ## explicit; go 1.25.0
 golang.org/x/term
-# golang.org/x/text v0.40.0
+# golang.org/x/text v0.41.0
 ## explicit; go 1.25.0
 golang.org/x/text/cases
 golang.org/x/text/encoding
@@ -609,7 +609,7 @@ golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
 golang.org/x/text/width
-# golang.org/x/tools v0.47.0
+# golang.org/x/tools v0.48.0
 ## explicit; go 1.25.0
 golang.org/x/tools/cover
 golang.org/x/tools/go/ast/edge
@@ -671,7 +671,7 @@ gopkg.in/inf.v0
 # gopkg.in/yaml.v3 v3.0.1
 ## explicit
 gopkg.in/yaml.v3
-# k8s.io/apimachinery v0.36.3
+# k8s.io/apimachinery v0.37.0
 ## explicit; go 1.26.0
 k8s.io/apimachinery/pkg/api/resource
 k8s.io/apimachinery/pkg/api/validate/constraints

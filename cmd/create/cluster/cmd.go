@@ -54,6 +54,7 @@ import (
 	"github.com/openshift/rosa/pkg/helper"
 	mpHelpers "github.com/openshift/rosa/pkg/helper/machinepools"
 	"github.com/openshift/rosa/pkg/helper/roles"
+	urlHelper "github.com/openshift/rosa/pkg/helper/url"
 	"github.com/openshift/rosa/pkg/helper/versions"
 	"github.com/openshift/rosa/pkg/ingress"
 	"github.com/openshift/rosa/pkg/interactive"
@@ -87,7 +88,7 @@ const (
 	listInputMessage          = "Format should be a comma-separated list."
 	listBillingAccountMessage = "To see the list of billing account options, you can use interactive mode by passing '-i'."
 
-	// nolint:lll
+	//nolint:lll
 	createVpcForHcpDoc = "https://docs.openshift.com/rosa/rosa_hcp/rosa-hcp-sts-creating-a-cluster-quickly.html#rosa-hcp-creating-vpc"
 
 	duplicateIamRoleArnErrorMsg = "ROSA IAM roles must have unique ARNs " +
@@ -214,6 +215,8 @@ var args struct {
 
 	// Audit Log Forwarding
 	AuditLogRoleARN string
+	// Spot termination handling
+	spotTerminationQueueUrl string
 
 	// Default Ingress Attributes
 	defaultIngressRouteSelectors            string
@@ -833,6 +836,12 @@ func initFlags(cmd *cobra.Command) {
 		"",
 		"The ARN of the role that is used to forward audit logs to AWS CloudWatch.",
 	)
+	flags.StringVar(
+		&args.spotTerminationQueueUrl,
+		"spot-termination-queue-url",
+		"",
+		"Optional SQS queue URL that enables graceful Spot interruption handling for Hosted Control Plane clusters.",
+	)
 
 	flags.StringVar(
 		&args.defaultIngressRouteSelectors,
@@ -1409,6 +1418,10 @@ func run(cmd *cobra.Command, _ []string) {
 	// OpenShift version:
 	version := args.version
 	channelGroup := args.channelGroup
+	channel := args.channel
+	if channel != "" {
+		channelGroup = ocm.ChannelGroupFromChannel(channel)
+	}
 	defaultVersion, versionList, err := versions.GetVersionList(r, channelGroup, isSTS, isHostedCP, isHostedCP, true)
 	if err != nil {
 		r.Reporter.Errorf("%s", err)
@@ -1435,14 +1448,6 @@ func run(cmd *cobra.Command, _ []string) {
 		r.Reporter.Errorf("Expected a valid OpenShift version: %s", err)
 		os.Exit(1)
 	}
-	if err := r.OCMClient.IsVersionCloseToEol(ocm.CloseToEolDays, version, channelGroup); err != nil {
-		r.Reporter.Warnf("%v", err)
-		if !confirm.Confirm("continue with version '%s'", ocm.GetRawVersionId(version)) {
-			os.Exit(0)
-		}
-	}
-
-	channel := args.channel
 	channels, err := r.OCMClient.GetAvailableChannels(version)
 	if err != nil {
 		r.Reporter.Errorf("Failed to retrieve available channels for version '%s': %s", version, err)
@@ -1459,6 +1464,17 @@ func run(cmd *cobra.Command, _ []string) {
 		if err != nil {
 			r.Reporter.Errorf("Expected a valid OpenShift Channel: %s", err)
 			os.Exit(1)
+		}
+	}
+	version, channelGroup, err = reconcileChannelGroupVersion(r, channel, channelGroup, version, isSTS, isHostedCP)
+	if err != nil {
+		r.Reporter.Errorf("%s", err)
+		os.Exit(1)
+	}
+	if err := r.OCMClient.IsVersionCloseToEol(ocm.CloseToEolDays, version, channelGroup); err != nil {
+		r.Reporter.Warnf("%v", err)
+		if !confirm.Confirm("continue with version '%s'", ocm.GetRawVersionId(version)) {
+			os.Exit(0)
 		}
 	}
 
@@ -3545,6 +3561,11 @@ func run(cmd *cobra.Command, _ []string) {
 		InfraMachineType:                       args.infraMachineType,
 	}
 
+	if err := setSpotTerminationQueueURLForCreate(&clusterConfig, isHostedCP, args.spotTerminationQueueUrl); err != nil {
+		r.Reporter.Errorf("%s", err)
+		os.Exit(1)
+	}
+
 	if !isHostedCP {
 		clusterConfig.DisableWorkloadMonitoring = &disableWorkloadMonitoring
 	}
@@ -4213,7 +4234,8 @@ func buildCommand(spec ocm.Spec, operatorRolesPrefix string,
 	}
 	if spec.Version != "" {
 		commandVersion := ocm.GetRawVersionId(spec.Version)
-		if spec.ChannelGroup != ocm.DefaultChannelGroup {
+		// --channel and --channel-group are mutually exclusive; prefer --channel when set.
+		if spec.Channel == "" && spec.ChannelGroup != ocm.DefaultChannelGroup {
 			command += fmt.Sprintf(" --channel-group %s", spec.ChannelGroup)
 		}
 		command += fmt.Sprintf(" --version %s", commandVersion)
@@ -4393,6 +4415,10 @@ func buildCommand(spec ocm.Spec, operatorRolesPrefix string,
 		command += fmt.Sprintf(" --billing-account %s", spec.BillingAccount)
 	}
 
+	if spec.TerminationHandlerQueueUrl != nil && *spec.TerminationHandlerQueueUrl != "" {
+		command += fmt.Sprintf(" --spot-termination-queue-url %s", *spec.TerminationHandlerQueueUrl)
+	}
+
 	if spec.NoCni {
 		command += " --no-cni"
 	}
@@ -4407,7 +4433,6 @@ func buildCommand(spec ocm.Spec, operatorRolesPrefix string,
 	}
 	return command
 }
-
 func buildTagsCommand(tags map[string]string) []string {
 	// set correct delim, if a key or value contains `:` the delim should be " "
 	delim := ":"
@@ -4670,5 +4695,55 @@ func validateUniqueIamRoleArnsForStsCluster(accountRoles []string, operatorRoles
 		return fmt.Errorf(duplicateIamRoleArnErrorMsg, duplicate)
 	}
 
+	return nil
+}
+
+// reconcileChannelGroupVersion recomputes the channel group from the channel string and
+// re-validates the version against the new channel group's version list when they differ.
+// This handles the case where the channel was set via --channel flag or selected interactively
+// and the derived channel group differs from the one used during initial version resolution.
+// Note that this won't allow to choose a version that is present in the channel chosen in interactive mode
+// but not in the initial one. This is due to the fact that channel is available only after version
+// is known, not before.
+func reconcileChannelGroupVersion(
+	r *rosa.Runtime,
+	channel string,
+	channelGroup string,
+	version string,
+	isSTS bool,
+	isHostedCP bool,
+) (string, string, error) {
+	if channel == "" {
+		return version, channelGroup, nil
+	}
+	newChannelGroup := ocm.ChannelGroupFromChannel(channel)
+	if newChannelGroup == channelGroup {
+		return version, channelGroup, nil
+	}
+	channelGroup = newChannelGroup
+	_, versionList, err := versions.GetVersionList(r, channelGroup, isSTS, isHostedCP, isHostedCP, true)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to retrieve versions for channel group '%s': %w", channelGroup, err)
+	}
+	version, err = r.OCMClient.ValidateVersion(
+		ocm.GetRawVersionId(version), versionList, channelGroup, isSTS, isHostedCP)
+	if err != nil {
+		return "", "", fmt.Errorf("expected a valid OpenShift version for channel group '%s': %w", channelGroup, err)
+	}
+	return version, channelGroup, nil
+}
+
+func setSpotTerminationQueueURLForCreate(clusterConfig *ocm.Spec, isHostedCP bool, queueURL string) error {
+	if queueURL != "" && !isHostedCP {
+		return fmt.Errorf("the '--spot-termination-queue-url' flag is only supported for Hosted Control Plane clusters")
+	}
+	if queueURL == "" {
+		return nil
+	}
+	if err := urlHelper.ValidateHTTPSQueueURL(queueURL); err != nil {
+		return fmt.Errorf("invalid value for '--spot-termination-queue-url': %w", err)
+	}
+
+	clusterConfig.TerminationHandlerQueueUrl = &queueURL
 	return nil
 }

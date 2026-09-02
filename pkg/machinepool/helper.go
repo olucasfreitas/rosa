@@ -10,17 +10,17 @@ import (
 	clustervalidations "github.com/openshift-online/ocm-common/pkg/cluster/validations"
 	commonUtils "github.com/openshift-online/ocm-common/pkg/utils"
 	cmv1 "github.com/openshift-online/ocm-sdk-go/clustersmgmt/v1"
-	"github.com/spf13/cobra"
+	"github.com/spf13/cobra" //nolint:depguard
 
 	"github.com/openshift/rosa/pkg/aws"
 	"github.com/openshift/rosa/pkg/fedramp"
 	mpHelpers "github.com/openshift/rosa/pkg/helper/machinepools"
 	"github.com/openshift/rosa/pkg/helper/versions"
-	"github.com/openshift/rosa/pkg/interactive"
-	interactiveSgs "github.com/openshift/rosa/pkg/interactive/securitygroups"
+	"github.com/openshift/rosa/pkg/interactive"                               //nolint:depguard
+	interactiveSgs "github.com/openshift/rosa/pkg/interactive/securitygroups" //nolint:depguard
 	"github.com/openshift/rosa/pkg/ocm"
-	mpOpts "github.com/openshift/rosa/pkg/options/machinepool"
-	"github.com/openshift/rosa/pkg/rosa"
+	mpOpts "github.com/openshift/rosa/pkg/options/machinepool" //nolint:depguard
+	"github.com/openshift/rosa/pkg/rosa"                       //nolint:depguard
 )
 
 const (
@@ -32,9 +32,12 @@ const (
 	zoneTypeStandard   = "Standard"
 	zoneTypeNA         = "N/A"
 
-	displayValueYes     = "Yes"
-	displayValueNo      = "No"
-	displayValueUnknown = "Unknown"
+	displayValueYes                              = "Yes"
+	displayValueNo                               = "No"
+	displayValueUnknown                          = "Unknown"
+	spotPriceOnDemand                            = "on-demand"
+	spotNodePoolWithoutTerminationHandlerWarning = "Spot NodePool created without termination handler configuration. " +
+		"Nodes will not be gracefully drained on interruptions."
 
 	imageTypeWindows = "windows"
 
@@ -282,7 +285,7 @@ func (r *ReplicaSizeValidation) MinReplicaValidator() interactive.Validator {
 
 func spotMaxPriceValidator(val interface{}) error {
 	spotMaxPrice := fmt.Sprintf("%v", val)
-	if spotMaxPrice == "on-demand" {
+	if spotMaxPrice == spotPriceOnDemand {
 		return nil
 	}
 	price, err := strconv.ParseFloat(spotMaxPrice, commonUtils.MaxByteSize)

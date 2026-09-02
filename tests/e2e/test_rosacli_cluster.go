@@ -306,7 +306,6 @@ var _ = Describe("Edit cluster",
 
 				clusterDetail, err := clusterService.ReflectClusterDescription(output)
 				Expect(err).ToNot(HaveOccurred())
-				// nolint
 				expectedUWMValue := UWMEnabled
 				recoverUWMStatus := false
 				if clusterConfig.DisableWorkloadMonitoring {
@@ -982,7 +981,7 @@ var _ = Describe("Edit cluster validation should", labels.Feature.Cluster, func(
 			if !hostedCluster {
 				_, err = clusterService.EditCluster(clusterID,
 					"--registry-config-blocked-registries", "test.blocked.com")
-				helper.ExpectErrorWithMessage(err, "Setting the registry config is only supported for hosted clusters")
+				helper.ExpectErrorWithMessage(err, "setting the registry config is only supported for hosted clusters")
 				return
 			}
 
@@ -995,7 +994,7 @@ var _ = Describe("Edit cluster validation should", labels.Feature.Cluster, func(
 			By("patch hcp with invalid value for --registry-config-allowed-registries-for-import flag")
 			_, err = clusterService.EditCluster(clusterID,
 				"--registry-config-allowed-registries-for-import", "test.com:stringType")
-			helper.ExpectErrorWithMessage(err, "Expected valid allowed registries for import values")
+			helper.ExpectErrorWithMessage(err, "expected valid allowed registries for import values")
 		})
 	It("can validate autonode edit - [id:84982]", labels.Medium, labels.Runtime.Day2,
 		labels.FedRAMP, func() {
@@ -1295,7 +1294,6 @@ var _ = Describe("Classic cluster creation validation",
 				flags, err := clusterHandler.GenerateClusterCreateFlags()
 				Expect(err).To(BeNil())
 
-				// nolint
 				command = "rosa create cluster --cluster-name " + profile.ClusterConfig.Name + " " + strings.Join(flags, " ")
 				rosalCommand = config.GenerateCommand(command)
 
@@ -2126,7 +2124,7 @@ var _ = Describe("Create cluster with invalid options will",
 					"--pod-cidr":     "10111.0.0.0/16",
 				}
 				for flag, invalidValue := range illegalCIDRMap {
-					output, _, err := clusterService.Create(clusterName,
+					output, err := clusterService.CreateDryRun(clusterName,
 						flag, invalidValue,
 					)
 					Expect(err).To(HaveOccurred())
@@ -2135,7 +2133,7 @@ var _ = Describe("Create cluster with invalid options will",
 							invalidValue, flag, invalidValue))
 				}
 				By("Check the overlapped CIDR block validation")
-				output, _, err := clusterService.Create(clusterName,
+				output, err := clusterService.CreateDryRun(clusterName,
 					"--service-cidr", "1.0.0.0/16",
 					"--pod-cidr", "1.0.0.0/16",
 				)
@@ -2150,7 +2148,7 @@ var _ = Describe("Create cluster with invalid options will",
 					"--pod-cidr":     "1.0.0.0/28",
 				}
 				for flag, invalidValue := range invalidCIDRMap {
-					output, _, err := clusterService.Create(clusterName,
+					output, err := clusterService.CreateDryRun(clusterName,
 						flag, invalidValue,
 					)
 					Expect(err).To(HaveOccurred())
@@ -2169,7 +2167,7 @@ var _ = Describe("Create cluster with invalid options will",
 
 				}
 				By("Check the invalid machine CIDR for multi az")
-				output, _, err = clusterService.Create(clusterName,
+				output, err = clusterService.CreateDryRun(clusterName,
 					"--machine-cidr", "2.0.0.0/25",
 					"--multi-az",
 				)
@@ -2178,7 +2176,7 @@ var _ = Describe("Create cluster with invalid options will",
 					ContainSubstring("The allowed block size must be between a /16 netmask and /24"))
 
 				By("Check illegal host prefix")
-				output, _, err = clusterService.Create(clusterName,
+				output, err = clusterService.CreateDryRun(clusterName,
 					"--machine-cidr", "2.0.0.0/25",
 					"--host-prefix", "28",
 				)
@@ -2187,7 +2185,7 @@ var _ = Describe("Create cluster with invalid options will",
 					ContainSubstring("Subnet length should be between 23 and 26"))
 
 				By("Check invalid host prefix")
-				output, _, err = clusterService.Create(clusterName,
+				output, err = clusterService.CreateDryRun(clusterName,
 					"--machine-cidr", "2.0.0.0/25",
 					"--host-prefix", "invalid",
 				)
@@ -2708,7 +2706,7 @@ var _ = Describe("HCP cluster creation negative testing",
 		It("create HCP cluster with network type validation can work well via rosa cli - [id:73725]",
 			labels.Medium, labels.Runtime.Day1Negative,
 			func() {
-				clusterName := helper.GenerateRandomName("cluster-73725", 2)
+				clusterName := helper.GenerateRandomName("ocp-73725", 2)
 				By("Create HCP cluster with --no-cni and \"--network-type={OVNKubernetes, OpenshiftSDN}\" at the same time")
 				replacingFlags := map[string]string{
 					"-c":              clusterName,
@@ -2897,9 +2895,10 @@ var _ = Describe("HCP cluster creation negative testing",
 					"--cluster-name":  clusterName,
 					"--domain-prefix": clusterName,
 					"--version":       foundVersion,
-					"--channel-group": cg,
 				}
 				rosalCommand.ReplaceFlagValue(replacingFlags)
+				err = rosalCommand.DeleteFlag("--channel-group", true)
+				Expect(err).ToNot(HaveOccurred())
 				if !rosalCommand.CheckFlagExist("--external-auth-providers-enabled") {
 					rosalCommand.AddFlags("--external-auth-providers-enabled")
 				}
@@ -3084,7 +3083,7 @@ var _ = Describe("HCP cluster creation negative testing",
 					case "Support":
 						accountRoles[r.RoleName] = fmt.Sprintf("%s/ROSASRESupportPolicy",
 							arnPrefix)
-					case "Worker": // nolint:goconst
+					case "Worker":
 						accountRoles[r.RoleName] = fmt.Sprintf("%s/ROSAWorkerInstancePolicy",
 							arnPrefix)
 					}
@@ -3111,6 +3110,62 @@ var _ = Describe("HCP cluster creation negative testing",
 				}
 			})
 
+		It("to validate cluster creation with --channel flag resolves version correctly - [id:66016]",
+			labels.Medium, labels.Runtime.Day1Negative,
+			func() {
+				clusterName := helper.GenerateRandomName("ocp-66016", 2)
+				versionService := rosaClient.Version
+
+				By("Get a version available in the candidate channel group")
+				versionList, err := versionService.ListAndReflectJsonVersions(
+					rosacli.VersionChannelGroupCandidate, true)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(versionList).ToNot(BeEmpty())
+
+				candidateVersion := versionList[0].RAWID
+
+				By("Create HCP cluster with --channel and --version using dry-run")
+				replacingFlags := map[string]string{
+					"-c":              clusterName,
+					"--cluster-name":  clusterName,
+					"--domain-prefix": clusterName,
+					"--version":       candidateVersion,
+				}
+				rosalCommand.ReplaceFlagValue(replacingFlags)
+				if rosalCommand.CheckFlagExist("--channel-group") {
+					err = rosalCommand.DeleteFlag("--channel-group", true)
+					Expect(err).ToNot(HaveOccurred())
+				}
+				if rosalCommand.CheckFlagExist("--channel") {
+					err = rosalCommand.DeleteFlag("--channel", true)
+					Expect(err).ToNot(HaveOccurred())
+				}
+				rosalCommand.AddFlags(
+					"--channel", fmt.Sprintf("candidate-%s",
+						strings.Join(strings.Split(candidateVersion, ".")[:2], ".")),
+					"--dry-run", "-y")
+				out, err := rosaClient.Runner.RunCMD(strings.Split(rosalCommand.GetFullCommand(), " "))
+				Expect(err).ToNot(HaveOccurred())
+				Expect(out.String()).To(ContainSubstring(
+					fmt.Sprintf("Creating cluster '%s' should succeed", clusterName)))
+			})
+
+		It("to validate --channel and --channel-group are mutually exclusive - [id:66016]",
+			labels.Medium, labels.Runtime.Day1Negative,
+			func() {
+				clusterName := helper.GenerateRandomName("ocp-66016-excl", 2)
+
+				By("Create cluster with both --channel and --channel-group")
+				_, err := clusterService.CreateDryRun(
+					clusterName,
+					"--channel", "candidate-4.22",
+					"--channel-group", "candidate",
+				)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring(
+					"if any flags in the group [channel channel-group] are set none of the others can be"))
+			})
+
 		It("to validate hcp creation with registry config via rosacli - [id:76396]",
 			labels.Medium, labels.Runtime.Day1Negative,
 			func() {
@@ -3127,12 +3182,9 @@ var _ = Describe("HCP cluster creation negative testing",
 					if rosalCommand.CheckFlagExist(flag) {
 						rosalCommand.DeleteFlag(flag, true)
 					}
-					output, err := clusterService.CreateDryRun(clusterName, flag, "dummy-value")
-					Expect(err).To(HaveOccurred())
-					Expect(output.String()).
-						To(
-							ContainSubstring(
-								"ERR: Setting the registry config is only supported for hosted clusters"))
+					_, err := clusterService.CreateDryRun(clusterName, flag, "dummy-value")
+					helper.ExpectErrorWithMessage(err,
+						"setting the registry config is only supported for hosted clusters")
 				}
 
 				By("create hcp with invalid value for --registry-config-allowed-registries-for-import flag")
@@ -3146,19 +3198,17 @@ var _ = Describe("HCP cluster creation negative testing",
 				log.Logger.Debug(strings.Split(rosalCommand.GetFullCommand(), " "))
 
 				rosalCommand.AddFlags("--registry-config-allowed-registries-for-import", "test.com:invalid")
-				output, err := rosaClient.Runner.RunCMD(strings.Split(rosalCommand.GetFullCommand(), " "))
+				_, err := rosaClient.Runner.RunCMD(strings.Split(rosalCommand.GetFullCommand(), " "))
 				log.Logger.Info(strings.Split(rosalCommand.GetFullCommand(), " "))
-				Expect(err).To(HaveOccurred())
-				Expect(output.String()).To(ContainSubstring("ERR: Expected valid allowed registries for import values"))
+				helper.ExpectErrorWithMessage(err, "expected valid allowed registries for import values")
 
 				By("create hcp with --registry-config-blocked-registries and --registry-config-allowed-registries at same time")
 				rosalCommand.DeleteFlag("--registry-config-allowed-registries-for-import", true)
 				rosalCommand.AddFlags("--registry-config-allowed-registries", "test.com",
 					"--registry-config-blocked-registries", "test.blocked.com")
-				output, err = rosaClient.Runner.RunCMD(strings.Split(rosalCommand.GetFullCommand(), " "))
-				Expect(err).To(HaveOccurred())
-				Expect(output.String()).To(ContainSubstring(
-					"ERR: Allowed registries and blocked registries are mutually exclusive fields"))
+				_, err = rosaClient.Runner.RunCMD(strings.Split(rosalCommand.GetFullCommand(), " "))
+				helper.ExpectErrorWithMessage(err,
+					"allowed registries and blocked registries are mutually exclusive fields")
 			})
 	})
 
@@ -3454,7 +3504,7 @@ var _ = Describe("Create cluster with availability zones testing",
 			func() {
 				profile := handler.LoadProfileYamlFileByENV()
 				mpID := "mp-52691"
-				machineType := "m5.2xlarge" // nolint:goconst
+				machineType := "m5.2xlarge"
 
 				if profile.ClusterConfig.BYOVPC || profile.ClusterConfig.Zones == "" {
 					SkipTestOnFeature("create rosa cluster with availability zones")
