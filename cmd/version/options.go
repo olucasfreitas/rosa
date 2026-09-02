@@ -2,6 +2,7 @@ package version
 
 import (
 	"fmt"
+	"runtime/debug"
 
 	verify "github.com/openshift/rosa/cmd/verify/rosa"
 	"github.com/openshift/rosa/pkg/info"
@@ -12,6 +13,7 @@ import (
 type RosaVersionUserOptions struct {
 	clientOnly bool
 	verbose    bool
+	build      bool
 }
 
 func NewRosaVersionUserOptions() *RosaVersionUserOptions {
@@ -19,8 +21,9 @@ func NewRosaVersionUserOptions() *RosaVersionUserOptions {
 }
 
 type RosaVersionOptions struct {
-	reporter   *reporter.Object
-	verifyRosa verify.VerifyRosa
+	reporter      *reporter.Object
+	verifyRosa    verify.VerifyRosa
+	readBuildInfo func() (*debug.BuildInfo, bool)
 
 	args *RosaVersionUserOptions
 }
@@ -32,9 +35,10 @@ func NewRosaVersionOptions() (*RosaVersionOptions, error) {
 	}
 
 	return &RosaVersionOptions{
-		verifyRosa: verifyRosa,
-		reporter:   reporter.CreateReporter(),
-		args:       NewRosaVersionUserOptions(),
+		verifyRosa:    verifyRosa,
+		reporter:      reporter.CreateReporter(),
+		readBuildInfo: debug.ReadBuildInfo,
+		args:          NewRosaVersionUserOptions(),
 	}, nil
 }
 
@@ -45,6 +49,26 @@ func (o *RosaVersionOptions) Version() error {
 		o.reporter.Infof("Information and download locations:\n\t%s\n\t%s\n",
 			version.ConsoleLatestFolder,
 			version.DownloadLatestMirrorFolder)
+	}
+
+	if o.args.build {
+		buildInfo, ok := o.readBuildInfo()
+		if ok {
+			var revision string
+
+			for _, setting := range buildInfo.Settings {
+				if setting.Key == "vcs.revision" {
+					revision = setting.Value
+				}
+			}
+
+			if revision == "" {
+				revision = info.Build
+			}
+			o.reporter.Infof("Git commit: %s", revision)
+		} else {
+			o.reporter.Infof("Git commit: %s", info.Build)
+		}
 	}
 
 	if !o.args.clientOnly {

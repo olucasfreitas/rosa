@@ -55,6 +55,15 @@ func NewRosaVersionCommand() *cobra.Command {
 		false,
 		"Display verbose version information, including download locations",
 	)
+	buildFlag := "build"
+	cmd.Flags().BoolVarP(
+		&o.build,
+		buildFlag,
+		"b",
+		false,
+		"Display extra build info, primarily the git commit the binary was built from",
+	)
+	cmd.Flags().MarkHidden(buildFlag)
 	return cmd
 }
 

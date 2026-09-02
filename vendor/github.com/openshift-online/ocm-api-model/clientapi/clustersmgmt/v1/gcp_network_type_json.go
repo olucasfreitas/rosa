@@ -76,6 +76,15 @@ func WriteGCPNetwork(object *GCPNetwork, stream *jsoniter.Stream) {
 		}
 		stream.WriteObjectField("control_plane_subnet")
 		stream.WriteString(object.controlPlaneSubnet)
+		count++
+	}
+	present_ = len(object.fieldSet_) > 4 && object.fieldSet_[4]
+	if present_ {
+		if count > 0 {
+			stream.WriteMore()
+		}
+		stream.WriteObjectField("firewall_rules_id")
+		stream.WriteString(object.firewallRulesId)
 	}
 	stream.WriteObjectEnd()
 }
@@ -95,7 +104,7 @@ func UnmarshalGCPNetwork(source interface{}) (object *GCPNetwork, err error) {
 // ReadGCPNetwork reads a value of the 'GCP_network' type from the given iterator.
 func ReadGCPNetwork(iterator *jsoniter.Iterator) *GCPNetwork {
 	object := &GCPNetwork{
-		fieldSet_: make([]bool, 4),
+		fieldSet_: make([]bool, 5),
 	}
 	for {
 		field := iterator.ReadObject()
@@ -119,6 +128,10 @@ func ReadGCPNetwork(iterator *jsoniter.Iterator) *GCPNetwork {
 			value := iterator.ReadString()
 			object.controlPlaneSubnet = value
 			object.fieldSet_[3] = true
+		case "firewall_rules_id":
+			value := iterator.ReadString()
+			object.firewallRulesId = value
+			object.fieldSet_[4] = true
 		default:
 			iterator.ReadAny()
 		}
