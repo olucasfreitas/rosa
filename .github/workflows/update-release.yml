@@ -25,7 +25,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -51,7 +51,7 @@ jobs:
       - name: Generate release notes
         if: steps.prev-tag.outputs.prev_tag != ''
         continue-on-error: true
-        uses: orhun/git-cliff-action@f50e11560dce63f7c33227798f90b924471a88b5 # v4.8.0
+        uses: orhun/git-cliff-action@3d96a18cc4ec17e9dc69ddcc424ccafaf1f78ce2 # v4.9.0
         with:
           config: cliff.toml
           args: --verbose ${{ steps.prev-tag.outputs.prev_tag }}..${{ github.ref_name }} --tag ${{ github.ref_name }} --output release-notes.md
@@ -72,7 +72,7 @@ jobs:
       contents: write
     steps:
       - name: Download release notes
-        uses: actions/download-artifact@65a9ebb14a12af6434346add6597e1613e92f48d # v4.1.1
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         continue-on-error: true
         with:
           name: release-notes
@@ -107,8 +107,8 @@ jobs:
             echo "Attempt ${i}/60 — release not found yet, waiting 2 minutes..."
             sleep 120
           done
-          echo "::warning::Release ${TAG} was not found after 2 hours — skipping release notes update"
-          exit 0
+          echo "::error::Release ${TAG} was not found after 2 hours"
+          exit 1
 
       - name: Update release title and body
         env:
@@ -121,8 +121,8 @@ jobs:
           if ! gh release view "$TAG" --repo "$REPO" --json tagName > /dev/null 2>&1; then
             err=$(gh release view "$TAG" --repo "$REPO" 2>&1 || true)
             if echo "$err" | grep -qiE 'release not found|HTTP 404|Could not find'; then
-              echo "Release ${TAG} does not exist — nothing to update"
-              exit 0
+              echo "::error::Release ${TAG} does not exist — cannot update release notes"
+              exit 1
             fi
             echo "::error::Unexpected error checking release ${TAG}: ${err}"
             exit 1
